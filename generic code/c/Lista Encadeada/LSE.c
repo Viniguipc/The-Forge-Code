@@ -14,9 +14,14 @@ void imprimir_lista (lista* inicio){
 	
 	printf("\n");
 	
-	while (pos != NULL){
-		printf("\n%d | [%d] -> %d", pos, pos->x, pos->prox);
-		pos = pos->prox;
+	if(inicio == NULL){
+		printf("\nLista Vazia");
+	}
+	else{
+		while (pos != NULL){
+			printf("\n%d | [%d] -> %d", pos, pos->x, pos->prox);
+			pos = pos->prox;
+		}
 	}
 }
 
@@ -81,6 +86,32 @@ void inserir_fim (lista** inicio){
 	}
 }
 
+void inserir_meio (lista** inicio){
+	
+}
+
+void excluir_inicio (lista** inicio){
+	lista* pos;
+	
+	if(*inicio == NULL){
+		printf("\nLista Vazia");		
+	}
+	else{
+		pos = *inicio;
+		*inicio = pos->prox;
+		
+		free(pos);
+	}
+}
+
+void excluir_fim (lista** inicio){
+	
+}
+
+void excluir_meio (lista** inicio){
+	
+}
+
 int main(){
 	lista *inicio;
 	int op;
@@ -101,12 +132,16 @@ int main(){
 				inserir_fim(&inicio);
 				break;
 			case 3:
+				inserir_meio(&inicio);
 				break;
 			case 4:
+				excluir_inicio(&inicio);
 				break;
 			case 5:
+				excluir_fim(&inicio);
 				break;
 			case 6:
+				excluir_meio(&inicio);
 				break;
 		}
 	}while (op != 7);
