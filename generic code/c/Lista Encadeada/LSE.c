@@ -7,6 +7,17 @@ typedef struct no{
 	struct no* prox;
 }lista;
 
+void imprimir_lista (lista* inicio){
+	lista *pos;
+	
+	pos = inicio;
+	
+	while (pos != NULL){
+		printf("\n%d | [%d] -> %d", pos, pos->x, pos->prox);
+		pos = pos->prox;
+	}
+}
+
 void menu (int* op){
 	do{
 		printf("\tMENU\n");
@@ -17,6 +28,10 @@ void menu (int* op){
 	}while (*op < 1 || *op > 7);
 }
 
+void inserir_inicio (lista** inicio){
+	
+}
+
 int main(){
 	lista *inicio;
 	int op;
@@ -25,9 +40,14 @@ int main(){
 	
 	do{
 		system("cls");
+		
+		imprimir_lista(inicio);
 		menu(&op);
 		
-		
+		switch(op){
+			case 1:
+				inserir_inicio(&inicio);
+		}
 	}while (op != 7);
 	
 }
