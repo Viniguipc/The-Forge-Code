@@ -22,7 +22,7 @@ void imprimir_lista (lista* inicio){
 
 void menu (int* op){
 	do{
-		printf("\n\tMENU\n");
+		printf("\n\n\tMENU\n");
 		printf("\n----------");
 		printf("\n1 - Inserir no Inicio\n2 - Inserir no Fim\n3 - Inserir no Meio\n4 - Excluir no Inicio\n5 - Excluir no Fim\n6 - Excluir no Meio\n7 - Sair");
 		printf("\n----------\n");
@@ -39,13 +39,46 @@ void inserir_inicio (lista** inicio){
 	int x;
 	lista *novo;
 	
-	novo = (lista*) malloc (sizeof(lista*));
+	novo = (lista*) malloc (sizeof(lista));
 	
-	pedir_valor(&x);
+	if(novo == NULL){
+		printf("\nERRO");
+	}
+	else{
+		pedir_valor(&x);
+		
+		novo->x = x;
+		novo->prox = *inicio;
+		*inicio = novo;
+	}
+}
+
+void inserir_fim (lista** inicio){
+	lista *pos, *novo;
+	int x;
 	
-	novo->x = x;
-	novo->prox = *inicio;
-	*inicio = novo;
+	pos = *inicio;
+	novo = (lista*) malloc (sizeof(lista));
+	
+	if(novo == NULL){
+		printf("\nERRO");
+	}
+	else{
+		pedir_valor(&x);
+		novo->x = x;
+		
+		if(*inicio == NULL){
+			novo->prox = *inicio;
+			*inicio = novo;
+		}
+		else{
+			while(pos->prox != NULL){
+				pos = pos->prox;
+			}
+			pos->prox = novo;
+			novo->prox = NULL;
+		}
+	}
 }
 
 int main(){
@@ -65,6 +98,7 @@ int main(){
 				inserir_inicio(&inicio);
 				break;
 			case 2:
+				inserir_fim(&inicio);
 				break;
 			case 3:
 				break;
