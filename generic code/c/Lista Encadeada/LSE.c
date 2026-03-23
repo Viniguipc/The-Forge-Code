@@ -35,9 +35,15 @@ void menu (int* op){
 	}while (*op < 1 || *op > 7);
 }
 
-void pedir_valor(int* x){
-	printf("\nDigite o valor: ");
-	scanf(" %d", x);
+void pedir_valor(int* x, int op){
+	if(op == 1){
+		printf("\nDigite o valor: ");
+		scanf(" %d", x);
+	}
+	else{
+		printf("\nDigite o valor buscado: ");
+		scanf(" %d", x);
+	}
 }
 
 void inserir_inicio (lista** inicio){
@@ -50,7 +56,7 @@ void inserir_inicio (lista** inicio){
 		printf("\nERRO");
 	}
 	else{
-		pedir_valor(&x);
+		pedir_valor(&x, 1);
 		
 		novo->x = x;
 		novo->prox = *inicio;
@@ -69,7 +75,7 @@ void inserir_fim (lista** inicio){
 		printf("\nERRO");
 	}
 	else{
-		pedir_valor(&x);
+		pedir_valor(&x, 1);
 		novo->x = x;
 		
 		if(*inicio == NULL){
@@ -87,7 +93,45 @@ void inserir_fim (lista** inicio){
 }
 
 void inserir_meio (lista** inicio){
+	lista *pos, *ant, *novo;
+	int x, y;
 	
+	pos = *inicio;
+	novo = (lista*) malloc (sizeof(lista));
+	
+	if(novo == NULL){
+		printf("\nERRO");
+	}
+	else{
+		pedir_valor(&y, 2);
+		pedir_valor(&x, 1);
+		novo->x = x;
+		
+		if(*inicio == NULL){
+			novo->prox = *inicio;
+			*inicio = novo;
+		}
+		else{
+			while(pos->x != y && pos != NULL){
+				ant = pos;
+				pos = pos->prox;
+			}
+			
+			if(pos == NULL){
+				printf("\nValor não encontrado");
+			}
+			else{
+				if(pos == *inicio){
+					novo->prox = *inicio;
+					*inicio = novo;	
+				}
+				else{
+					ant->prox = novo;
+					novo->prox = pos;	
+				}
+			}
+		}
+	}
 }
 
 void excluir_inicio (lista** inicio){
@@ -124,7 +168,41 @@ void excluir_fim (lista** inicio){
 }
 
 void excluir_meio (lista** inicio){
+	lista *pos, *aux;
+	int y;
 	
+	if(*inicio == NULL){
+		printf("\nLista Vazia");
+	}
+	else{
+		pedir_valor(&y, 2);
+		pos = *inicio;
+		
+		while(pos->x != y && pos != NULL){
+			aux = pos;
+			pos = pos->prox;
+		}
+		if(pos == NULL){
+			printf("\nValor não encontrado");
+		}
+		else{
+			if(pos == *inicio){
+				*inicio = pos->prox;
+		
+				free(pos);
+			}
+			else{
+				if(pos->prox == NULL){
+					aux->prox = NULL;
+					free(pos);
+				}
+				else{
+					aux->prox = pos->prox;
+					free(pos);
+				}
+			}
+		}
+	}
 }
 
 int main(){
