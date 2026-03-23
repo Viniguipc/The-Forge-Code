@@ -29,10 +29,10 @@ void menu (int* op){
 	do{
 		printf("\n\n\tMENU\n");
 		printf("\n----------");
-		printf("\n1 - Inserir no Inicio\n2 - Inserir no Fim\n3 - Inserir no Meio\n4 - Excluir no Inicio\n5 - Excluir no Fim\n6 - Excluir no Meio\n7 - Sair");
+		printf("\n1 - Inserir no Inicio\n2 - Inserir no Fim\n3 - Inserir no Meio\n4 - Excluir no Inicio\n5 - Excluir no Fim\n6 - Excluir no Meio\n7 - Inserir Ordenado\n8 - Sair");
 		printf("\n----------\n");
 		*op = _getche() - '0';
-	}while (*op < 1 || *op > 7);
+	}while (*op < 1 || *op > 8);
 }
 
 void pedir_valor(int* x, int op){
@@ -205,6 +205,47 @@ void excluir_meio (lista** inicio){
 	}
 }
 
+void insere_ordenado (lista** inicio){
+	lista *pos, *ant, *novo;
+	int x;
+	
+	novo = (lista*) malloc (sizeof(lista));
+	
+	if(novo == NULL){
+		printf("\nERRo");
+	}
+	else{
+		pedir_valor(&x, 1);
+		novo->x = x;
+		pos = *inicio;
+		
+		if(*inicio == NULL){
+			novo->prox = *inicio;
+			*inicio = novo;
+		}
+		else{
+			while(pos != NULL && pos->x < novo->x){
+				ant = pos;
+				pos = pos->prox;
+			}
+			if(pos == NULL){
+				ant->prox = novo;
+				novo->prox = NULL;
+			}
+			else{
+				if(pos == *inicio){
+					*inicio = novo;
+					novo->prox = pos;
+				}
+				else{
+					ant->prox = novo;
+					novo->prox = pos;
+				}
+			}
+		}
+	}
+}
+
 int main(){
 	lista *inicio;
 	int op;
@@ -236,7 +277,10 @@ int main(){
 			case 6:
 				excluir_meio(&inicio);
 				break;
+			case 7:
+				insere_ordenado(&inicio);
+				break;
 		}
-	}while (op != 7);
+	}while (op != 8);
 	
 }
