@@ -105,7 +105,22 @@ void excluir_inicio (lista** inicio){
 }
 
 void excluir_fim (lista** inicio){
+	lista *pos, *aux;
 	
+	if(*inicio == NULL){
+		printf("\nLista Vazia");
+	}
+	else{
+		pos = *inicio;
+		
+		while(pos->prox != NULL){
+			aux = pos;
+			pos = pos->prox;
+		}
+
+		aux->prox = NULL;
+		free(pos);
+	}
 }
 
 void excluir_meio (lista** inicio){
