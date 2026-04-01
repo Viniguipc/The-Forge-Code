@@ -98,6 +98,6 @@ main(){
 				excluir_inicio(&inicio);
 				break;
 		}
-	}while (op != 2);
+	}while (op != 3);
 }
 
