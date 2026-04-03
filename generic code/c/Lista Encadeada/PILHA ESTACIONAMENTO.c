@@ -9,6 +9,29 @@ typedef struct no{
 	struct no* prox;
 }lista;
 
+void imprimir_lista_rec(lista *inicio_park, lista *inicio_rua) {
+	if (inicio_park == NULL && inicio_rua == NULL) {
+		printf("\n==============\t========");
+	}
+	else{
+			if (inicio_park == NULL) {
+			printf("\n|            |\t");
+		} else {
+			printf("\n| [%s] |\t", inicio_park->carro);
+			inicio_park = inicio_park->prox;
+		}
+		
+		if (inicio_rua == NULL) {
+			printf("|            |");
+		} else {
+			printf("| [%s] |", inicio_rua->carro);
+			inicio_rua = inicio_rua->prox;
+		}
+		
+		imprimir_lista_rec(inicio_park, inicio_rua);
+	}
+}
+
 void imprimir_lista (lista* inicio_park, lista* inicio_rua){
 	lista *pos_park, *pos_rua;
 	
