@@ -77,7 +77,23 @@ void excluir_inicio (lista** head, lista** feet){
 }
 
 void excluir_fim (lista** head, lista **feet){
-	
+	lista *pos;
+	if(*head == NULL){
+		DrawText("LISTA VAZIA", ((GetScreenWidth() / 2) - (MeasureText("LISTA VAZIA", 20) / 2)), 450, 20, BLUE);
+	}
+	else{
+		pos = *feet;
+		
+		*feet = pos->ant;
+		if(*feet == NULL){
+			*head = NULL;
+		}
+		else{
+			(*feet)->prox = NULL;
+		}
+		
+		free(pos);
+	}
 }
 
 void imprimir (lista* head){
@@ -173,6 +189,7 @@ int main(){
 						digitando = 0;
 						break;
 					case 5:
+						excluir_fim(&head, &feet);
 						op = 0;
 						digitando = 0;
 						break;
