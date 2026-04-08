@@ -40,7 +40,7 @@ void inserir_fim (lista** head, lista** feet, int x){
 	novo = (lista*) malloc (sizeof(struct no));
 	
 	if(novo == NULL){
-		DrawText("ERRO", ((GetScreenWidth() / 2) - (MeasureText("ERRO", 20) / 2)), 500, 20, BLUE);
+		DrawText("ERRO", ((GetScreenWidth() / 2) - (MeasureText("ERRO", 20) / 2)), 450, 20, BLUE);
 	}
 	else{
 		novo->x = x;
@@ -55,6 +55,29 @@ void inserir_fim (lista** head, lista** feet, int x){
 		}
 		*feet = novo;
 	}
+}
+
+void excluir_inicio (lista** head, lista** feet){
+	lista *pos;
+	if(*head == NULL){
+		DrawText("LISTA VAZIA", ((GetScreenWidth() / 2) - (MeasureText("LISTA VAZIA", 20) / 2)), 450, 20, BLUE);
+	}
+	else{
+		pos = *head;
+		
+		*head = pos->prox;
+		if(*head == NULL){
+			*feet = NULL;
+		}
+		else{
+			(*head)->ant = NULL;
+		}
+		free(pos);
+	}
+}
+
+void excluir_fim (lista** head, lista **feet){
+	
 }
 
 void imprimir (lista* head){
@@ -111,7 +134,7 @@ int main(){
 	InitWindow(1200, 900, "Lista Duplamente Encadeada");
 	SetTargetFPS(60);
 	
-	while(!WindowShouldClose() && op != 3){
+	while(!WindowShouldClose() && op != 7){
 		BeginDrawing();
 			ClearBackground(BLACK);
 			
@@ -141,12 +164,22 @@ int main(){
 						digitando = 0;
 						break;
 					case 3:
+						op = 0;
+						digitando = 0;
 						break;
 					case 4:
+						excluir_inicio(&head, &feet);
+						op = 0;
+						digitando = 0;
 						break;
 					case 5:
+						op = 0;
+						digitando = 0;
 						break;
-										
+					case 6:
+						op = 0;
+						digitando = 0;
+						break;			
 				}
 			}
 		EndDrawing();
