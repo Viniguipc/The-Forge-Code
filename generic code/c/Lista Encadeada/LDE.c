@@ -34,6 +34,29 @@ void inserir_inicio(lista** head, lista** feet, int x){
 	}
 }
 
+void inserir_fim (lista** head, lista** feet, int x){
+	lista *novo;
+	
+	novo = (lista*) malloc (sizeof(struct no));
+	
+	if(novo == NULL){
+		printf("\nERRO");
+	}
+	else{
+		novo->x = x;
+		novo->prox = NULL;
+		novo->ant = *feet;
+		
+		if(*head == NULL){
+			*head = novo;
+		}
+		else{
+			(*feet)->prox = novo;
+		}
+		*feet = novo;
+	}
+}
+
 void imprimir (lista* head){
 	if(head == NULL){
 		printf("\nLista vazia\n");
@@ -69,6 +92,9 @@ int main(){
 				inserir_inicio(&head, &feet, x);
 				break;
 			case 2: 
+				printf("\nInsera o valor: ");
+				scanf(" %d", &x);
+				inserir_fim(&head, &feet, x);
 				break;
 		}
 	}while(op != 3);
