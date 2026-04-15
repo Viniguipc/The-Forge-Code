@@ -61,6 +61,45 @@ void inserir_fim (lista** head, lista** feet, int x){
 	}
 }
 
+void inserir_meio(lista** head, lista** feet, int x){
+	lista* aux, *novo;
+	
+	aux = *head;
+	
+	while(aux != NULL && aux->x != x){
+	aux = aux->prox;
+	}
+	
+	if(aux == NULL){
+		DrawText("Valor não encontrado", ((GetScreenWidth() / 2) - (MeasureText("Valor não encontrado", 20) / 2)), 450, 20, BLUE);
+	}
+	else{
+		if(aux->ant == NULL){
+			inserir_inicio(head, feet, x);
+		}
+		else{
+			if(aux->prox == NULL){
+				inserir_fim(head, feet, x);
+			}
+			else{
+				novo = (lista*) malloc (sizeof(struct no));
+
+				if(novo == NULL){
+					DrawText("ERRO", ((GetScreenWidth() / 2) - (MeasureText("ERRO", 20) / 2)), 500, 20, BLUE);
+				}
+				
+				novo->ant = aux->ant;
+				novo->prox = aux;
+				novo->x = x;
+				
+				aux->ant->prox = novo;
+				aux->ant = novo;
+			}
+		}
+	}
+}
+
+
 void excluir_inicio (lista** head, lista** feet){
 	lista *pos;
 	if(*head == NULL){
