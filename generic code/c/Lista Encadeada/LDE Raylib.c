@@ -8,8 +8,33 @@ typedef struct no{
 	int x;
 }lista;
 
-void valor(){
+int valor(int* x){
+	static char charnum[10];
+	static int cont = 0, digitando = 0, digito;
 	
+	DrawText("Digite o valor desejado: ", (GetScreenWidth() / 2) - (MeasureText("Digite o valor desejado: ", GetScreenHeight() / 40) / 2), 200, GetScreenHeight() / 40, LIME);
+	
+	if(cont < 10){
+		digito = GetCharPressed();
+		if(digito >= '0' && digito <= '9'){
+			charnum[cont] = digito;
+			cont++;
+		}
+		else{
+			if(IsKeyPressed(KEY_BACKSPACE)){
+				cont--;
+				if(cont < 0) cont = 0;
+				charnum[cont] = '\0';
+			}
+		}
+	}
+	
+	if(IsKeyPressed(KEY_ENTER)){
+		*x = atoi(charnum);
+		return 0;
+	}
+	
+	return 1;
 }
 
 void inserir_inicio(lista** head, lista** feet, int x){
@@ -221,7 +246,7 @@ void menu (int* op, int* digitando){
 
 int main(){
 	lista *head, *feet;
-	int op = 0, x = 0, digitando = 0;
+	int op = 0, x = 0, digitando = 0, busca = 0;
 	
 	head = feet = NULL;
 	
@@ -230,6 +255,8 @@ int main(){
 	SetTargetFPS(60);
 	
 	while(!WindowShouldClose() && op != 7){
+		x = 0;
+		
 		BeginDrawing();
 			ClearBackground(BLACK);
 			
@@ -239,7 +266,9 @@ int main(){
 				DrawText("Lista Vazia", ((GetScreenWidth() / 2) - (MeasureText("Lista Vazia", GetScreenHeight() / 50) / 2)), 100, GetScreenHeight() / 50, LIGHTGRAY);
 			}
 			else{
-				imprimir(head);
+				if(busca = 0){
+					imprimir(head);
+				}
 			}
 			
 			if(digitando == 0){
@@ -249,6 +278,10 @@ int main(){
 			else{
 				switch(op){
 					case 1:
+						if(busca == 1){
+							busca = valor(&x);	
+						}
+
 						inserir_inicio(&head, &feet, x);
 						op = 0;
 						digitando = 0;
@@ -281,6 +314,5 @@ int main(){
 			}
 		EndDrawing();
 	}
-	
 	CloseWindow();
 }
