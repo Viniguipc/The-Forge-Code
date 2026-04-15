@@ -8,6 +8,10 @@ typedef struct no{
 	int x;
 }lista;
 
+void valor(){
+	
+}
+
 void inserir_inicio(lista** head, lista** feet, int x){
 	lista *novo;
 	
@@ -96,6 +100,41 @@ void excluir_fim (lista** head, lista **feet){
 	}
 }
 
+void excluir_meio (lista** head, lista** feet, int x){
+	lista *pos, *aux;
+	
+	if(*head == NULL){
+		DrawText("LISTA VAZIA", ((GetScreenWidth() / 2) - (MeasureText("LISTA VAZIA", 20) / 2)), 450, 20, BLUE);
+	}
+	else{
+		pos = *head;
+		
+		while(pos != NULL && pos->x != x){
+			pos = pos->prox;
+		}
+		
+		if(pos == NULL){
+			DrawText("Valor não encontrado", ((GetScreenWidth() / 2) - (MeasureText("Valor não encontrado", 20) / 2)), 450, 20, BLUE);
+		}
+		else{
+			if(pos->ant == NULL){
+				excluir_inicio(head, feet);
+			}
+			else{		
+				if(pos->prox == NULL){
+					excluir_fim(head, feet);
+				}
+				else{
+					aux = pos->prox;
+					aux->ant = pos->ant;
+					aux = pos->ant;
+					aux->prox = pos->prox;
+				}
+			}
+		}
+	}
+}
+
 void imprimir (lista* head){
 	int i;
 	while(head != NULL){
@@ -133,10 +172,10 @@ void menu (int* op, int* digitando){
 	
 	for(i = 0; i < 7; i++){
 		if((i + 1) != escolha){
-			DrawText(opcoes[i], 250, 50 * (i + 2) + 450, 30 , WHITE);
+			DrawText(opcoes[i], (GetScreenWidth() / 2) - (MeasureText(opcoes[i], GetScreenHeight() / 40) / 2), 50 * (i + 1) + (GetScreenHeight() / 2), GetScreenHeight() / 40, WHITE);
 		}
 		else{
-			DrawText(opcoes[i], 250, 50 * (i + 2) + 450, 30, RED);
+			DrawText(opcoes[i], (GetScreenWidth() / 2) - (MeasureText(opcoes[i], GetScreenHeight() / 40) / 2), 50 * (i + 1) + (GetScreenHeight() / 2), GetScreenHeight() / 40, RED);
 		}
 	}
 }
@@ -147,24 +186,25 @@ int main(){
 	
 	head = feet = NULL;
 	
-	InitWindow(1200, 900, "Lista Duplamente Encadeada");
+	SetConfigFlags(FLAG_WINDOW_UNDECORATED);
+	InitWindow(GetMonitorWidth(0), GetMonitorHeight(0), "Lista Duplamente Encadeada");
 	SetTargetFPS(60);
 	
 	while(!WindowShouldClose() && op != 7){
 		BeginDrawing();
 			ClearBackground(BLACK);
 			
-			DrawText("Lista Atualizada", ((GetScreenWidth() / 2) - (MeasureText("Lista Atualizada", 40) / 2)), 50, 40, RED);
+			DrawText("Lista Atualizada", ((GetScreenWidth() / 2) - (MeasureText("Lista Atualizada", GetScreenHeight() / 20) / 2)), 50, GetScreenHeight() / 20, RED);
 			
 			if(head == NULL){
-				DrawText("Lista Vazia", ((GetScreenWidth() / 2) - (MeasureText("Lista Vazia", 20) / 2)), 100, 20, LIGHTGRAY);
+				DrawText("Lista Vazia", ((GetScreenWidth() / 2) - (MeasureText("Lista Vazia", GetScreenHeight() / 50) / 2)), 100, GetScreenHeight() / 50, LIGHTGRAY);
 			}
 			else{
 				imprimir(head);
 			}
 			
 			if(digitando == 0){
-				DrawText("MENU", ((GetScreenWidth() / 2) - (MeasureText("MENU", 20) / 2)), 500, 20, LIGHTGRAY);
+				DrawText("MENU", ((GetScreenWidth() / 2) - (MeasureText("MENU", GetScreenHeight() / 25) / 2)), (GetScreenHeight() / 2), GetScreenHeight() / 25, LIGHTGRAY);
 				menu(&op, &digitando);
 			}
 			else{
@@ -194,6 +234,7 @@ int main(){
 						digitando = 0;
 						break;
 					case 6:
+						excluir_meio(&head, &feet, x);
 						op = 0;
 						digitando = 0;
 						break;			
