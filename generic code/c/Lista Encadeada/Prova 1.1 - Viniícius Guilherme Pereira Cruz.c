@@ -241,9 +241,9 @@ void consulta(lista* head, int cod){
 void menu(int *op){
 	do{
 		printf("\n\n\tMENU\t");
-		printf("\n1 - INSERIR NA FILA DE IMPRESSAO\n2 - CANCELAR IMPRESSÃO\n3 - CONSULTAR CODIGO\n4 - LISTAR FILA DE IMPRESSAO\n5 - LISTAR HISTORICO\n6 - LISTAR DESCARTE\n7 - IMPRIMIR\n8 - SAIR DO CODIGO\n");
+		printf("\n1 - INSERIR NA FILA DE IMPRESSAO\n2 - CANCELAR IMPRESSÃO\n3 - CONSULTAR CODIGO\n4 - CONSULTAR CODIGO NO HISTORICO\n5 - LISTAR FILA DE IMPRESSAO\n6 - LISTAR HISTORICO\n7 - LISTAR DESCARTE\n8 - IMPRIMIR\n9 - SAIR DO CODIGO\n");
 		scanf(" %d", op);
-	}while(*op < 1 || *op > 8);
+	}while(*op < 1 || *op > 9);
 }
 
 void organizar_fila(lista** head, lista** feet, lista* atual){
@@ -342,15 +342,22 @@ int main(){
 				consulta(head, buscar);
 				break;
 			case 4:
-				listar(head);
+				do{
+					printf("\nDIGITE O CODIGO A SER CONSULTADO NO HISTORICO: ");
+					scanf(" %d", &buscar);
+				}while(buscar < 0);
+				consulta(historic, buscar);
 				break;
 			case 5:
-				listar(historic);
+				listar(head);
 				break;
 			case 6:
-				listar(trash);
+				listar(historic);
 				break;
 			case 7:
+				listar(trash);
+				break;
+			case 8:
 				imprimir(&head, &feet, &historic);
 				break;
 		}

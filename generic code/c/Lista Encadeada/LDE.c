@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "raylib.h"
 
 typedef struct no{
 	struct no *ant;
