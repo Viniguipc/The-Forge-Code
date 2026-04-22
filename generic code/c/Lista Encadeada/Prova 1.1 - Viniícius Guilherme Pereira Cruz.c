@@ -138,8 +138,63 @@ void listar(lista* head){
 	}
 }
 
-void consulta(lista* head){
-	
+void consulta(lista* head, int cod){
+	lista* aux;
+
+	if(head == NULL){
+		printf("\nLista Vazia");
+	}
+	else{
+		aux = head;
+		
+		while(aux != NULL && aux->cod != cod){
+			aux = aux->prox;
+		}
+
+		if(aux == NULL){
+			printf("\nCodigo nao encontrado\n");
+		}
+		else{
+			printf("\n%.7d | [%.5d] -> %.7d\n", aux, aux->cod, aux->prox);
+			switch(aux->dep){
+				case 1:
+					printf("DEPARTAMENTO: TI\n");
+					break;
+				case 2:
+					printf("DEPARTAMENTO: FINANCEIRO\n");
+					break;
+				case 3:
+					printf("DEPARTAMENTO: ADMINISTRATIVO\n");
+					break;
+				case 4:
+					printf("DEPARTAMENTO: RH\n");
+					break;
+			}
+			switch(aux->car){
+				case 1:
+					printf("CARGO: DEMAIS FUNCIONARIOS\n");
+					break;
+				case 2:
+					printf("CARGO: GERENTE\n");
+					break;
+				case 3:
+					printf("CARGO: DIRETOR\n");
+					break;
+			}
+			switch(aux->pri){
+				case 1:
+					printf("PRIORIDADE: ROTINA\n");
+					break;
+				case 5:
+					printf("PRIORIDADE: IMPORTANTE\n");
+					break;
+				case 10:
+					printf("PRIORIDADE: URGENTE\n");
+					break;
+			}
+			printf("PRIORIDADE FINAL: %d\n", aux->pri_final);
+		}
+	}
 }
 
 void menu(int *op){
@@ -152,7 +207,7 @@ void menu(int *op){
 
 int main(){
 	lista *head, *feet, *trash, *historic;
-	int op = 0, cod = 0;
+	int op = 0, cod = 0, buscar;
 
 	head = NULL;
 	feet = NULL;
@@ -170,7 +225,11 @@ int main(){
 				remover_cod(&head, &feet, &trash);
 				break;
 			case 3:
-				consulta(head);
+				do{
+					printf("\nDIGITE O CODIGO A SER CONSULTADO: ");
+					scanf(" %d", &buscar);
+				}while(buscar < 0);
+				consulta(head, buscar);
 				break;
 			case 4:
 				listar(head);
