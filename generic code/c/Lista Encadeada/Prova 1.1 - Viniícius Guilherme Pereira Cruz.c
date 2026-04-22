@@ -90,8 +90,12 @@ void inserir_prioridade(lista** head, lista** feet, int cod){
 	}
 }
 
-void inserir_inicio(lista** head, lista** feet){
-	
+void inserir_inicio(lista** head, lista* novo){
+	lista *aux;
+
+	aux = *head;
+	*head = novo;
+	novo->prox = aux;
 }
 
 void remover_cod(lista** head, lista** feet, lista** trash){
