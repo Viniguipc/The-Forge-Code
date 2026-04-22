@@ -100,46 +100,7 @@ void inserir_pilha(lista** head, lista* novo){
 }
 
 void remover_cod(lista** head, lista** feet, lista** trash){
-	lista *aux, *ant;
-	int y;
 	
-	if(*head == NULL){
-		printf("\nLista Vazia");
-	}
-	else{
-		do{
-			printf("\nDIGITE O CODIGO A SER REMOVIDO: ");
-			scanf(" %d", &y);
-		}while(y < 0);
-
-		aux = *head;
-		ant = NULL;
-		
-		while(aux != NULL && aux->cod != y){
-			ant = aux;
-			aux = aux->prox;
-		}
-		if(aux == NULL){
-			printf("\nValor nao encontrado");
-		}
-		else{
-			if(ant == NULL){
-				*head = aux->prox;
-		
-				inserir_pilha(trash, aux);
-			}
-			else{
-				if(aux->prox == NULL){
-					ant->prox = NULL;
-					inserir_pilha(trash, aux);
-				}
-				else{
-					ant->prox = aux->prox;
-					inserir_pilha(trash, aux);
-				}
-			}
-		}
-	}
 }
 
 void imprimir(lista** head, lista** feet, lista** historic){
@@ -292,7 +253,6 @@ void aumentar_tempo(lista** head, lista** feet){
 		ant = NULL;
 		
 		while(aux != NULL){
-			organizar = aux->prox;
 			aux->tempo++;
 			if((aux->tempo % 5) == 0){
 				aux->pri_final += 1;
@@ -303,11 +263,10 @@ void aumentar_tempo(lista** head, lista** feet){
 				else{
 					ant->prox = aux->prox;
 					organizar_fila(head, feet, aux);
-					aux = organizar;
+					aux = ant->prox;
 				}
 			}
 			else{
-				ant = aux;
 				aux = aux->prox;
 			}
 		}
@@ -355,4 +314,5 @@ int main(){
 				break;
 		}
 	}
+	return 0;
 }
