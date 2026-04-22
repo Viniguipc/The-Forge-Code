@@ -90,7 +90,7 @@ void inserir_prioridade(lista** head, lista** feet, int cod){
 	}
 }
 
-void inserir_inicio(lista** head, lista* novo){
+void inserir_pilha(lista** head, lista* novo){
 	lista *aux;
 
 	aux = *head;
@@ -103,7 +103,21 @@ void remover_cod(lista** head, lista** feet, lista** trash){
 }
 
 void imprimir(lista** head, lista** feet, lista** historic){
-	
+	lista *aux;
+
+	if(*head == NULL){
+		printf("\nLista Vazia");
+	}
+	else{
+		aux = *head;
+		*head = aux->prox;
+
+		inserir_pilha(historic, aux);
+
+		if(*head == NULL){
+			*feet = NULL;
+		}
+	}
 }
 
 void listar(lista* head){
