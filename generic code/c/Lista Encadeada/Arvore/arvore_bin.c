@@ -121,6 +121,32 @@ void imprimir_inOrder(arvore *raiz, int tab){
     }
 }
 
+void minimo(arvore* raiz){
+    if(raiz == NULL){
+        printf("\n A arvore esta vazia\n");
+    }else{
+        if(raiz->esq == NULL){
+            printf("\nMINIMO: %d <- [%d] *%d -> %d \n", raiz->esq, raiz->valor, *raiz, raiz->dir);
+        }
+        else{
+            minimo(raiz->esq);
+        }
+    }
+}
+
+void maximo(arvore* raiz){
+    if(raiz == NULL){
+        printf("\n A arvore esta vazia\n");
+    }else{
+        if(raiz->dir == NULL){
+            printf("\nMAXIMO: %d <- [%d] *%d -> %d \n", raiz->esq, raiz->valor, *raiz, raiz->dir);
+        }
+        else{
+            maximo(raiz->dir);
+        }
+    }
+}
+
 int menu(){
     int op;
     do{
@@ -129,9 +155,10 @@ int menu(){
         printf("\n (2) BUSCAR \n");
         printf("\n (3) REMOVER \n");
         printf("\n (4) LISTAR \n");
+        printf("\n (5) MINIMO E MAXIMO \n");
         printf("\n (0) SAIR \n");
         scanf("%d", &op);
-    }while(op < 0 || op > 4);
+    }while(op < 0 || op > 5);
     return op;
 }
 
@@ -178,6 +205,10 @@ int main(){
                         imprimir_inOrder(raiz, 0);
                         break;
                 }
+                break;
+            case 5:
+                minimo(raiz);
+                maximo(raiz);
                 break;
         }
     }
