@@ -39,29 +39,29 @@ void buscar(arvore* raiz, int valor){
     }
 }
 
-void remover(arvore* raiz, int valor){
-    if(raiz == NULL){
+void remover(arvore** raiz, int valor){
+    if(*raiz == NULL){
         printf("\n O valor nao foi encontrado\n");
     }else{
-        if(valor == raiz->valor){
-            if(raiz->esq == NULL && raiz->dir == NULL){
-                free(raiz);
+        if(valor == (*raiz)->valor){
+            if((*raiz)->esq == NULL && (*raiz)->dir == NULL){
+                free(*raiz);
             }else{
-                if(raiz->esq == NULL){
-                    arvore *temp = raiz->dir;
-                    free(raiz);
-                    raiz = temp;
+                if((*raiz)->esq == NULL){
+                    arvore *temp = (*raiz)->dir;
+                    free(*raiz);
+                    (*raiz) = temp;
                 }else{
-                    arvore *temp = raiz->esq;
-                    free(raiz);
-                    raiz = temp;
+                    arvore *temp = (*raiz)->esq;
+                    free(*raiz);
+                    (*raiz) = temp;
                 }
             }
         }else{
-            if(valor < raiz->valor){
-                remover(raiz->esq, valor);
+            if(valor < (*raiz)->valor){
+                remover(&((*raiz)->esq), valor);
             }else{
-                remover(raiz->dir, valor);
+                remover(&((*raiz)->dir), valor);
             }
         }
     }
@@ -147,6 +147,30 @@ void maximo(arvore* raiz){
     }
 }
 
+int altura(arvore* raiz){
+    int tam = 0, max = 0;
+    if(raiz == NULL){
+        printf("\n A arvore esta vazia\n");
+    }else{
+        if(raiz->esq != NULL){
+            tam = altura(raiz->esq);
+            tam++;
+            if(tam > max){
+                max = tam;
+            }
+        }
+        if(raiz->dir != NULL){
+            tam = altura(raiz->dir);
+            tam++;
+            if(tam > max){
+                max = tam;
+            }
+        }
+        tam = max;
+        return tam;
+    }
+}
+
 int menu(){
     int op;
     do{
@@ -156,15 +180,16 @@ int menu(){
         printf("\n (3) REMOVER \n");
         printf("\n (4) LISTAR \n");
         printf("\n (5) MINIMO E MAXIMO \n");
+        printf("\n (6) ALTURA DA ARVORE \n");
         printf("\n (0) SAIR \n");
         scanf("%d", &op);
-    }while(op < 0 || op > 5);
+    }while(op < 0 || op > 6);
     return op;
 }
 
 int main(){
     arvore *raiz = NULL;
-    int op = -1, imprimir = 0;
+    int op = -1, imprimir = 0, tamanho = 0;
     
     while(op != 0){
         op = menu();
@@ -209,6 +234,10 @@ int main(){
             case 5:
                 minimo(raiz);
                 maximo(raiz);
+                break;
+            case 6:
+                tamanho = altura(raiz);
+                printf("\n ALTURA = %d \n", tamanho);
                 break;
         }
     }
