@@ -28,7 +28,7 @@ void buscar(arvore* raiz, int valor){
         printf("\n O valor nao foi encontrado\n");
     }else{
         if(valor == raiz->valor){
-            printf("\n O valor foi encontrado\n");
+            printf("\n %d <- [%d] *%d -> %d \n", raiz->esq, raiz->valor, *raiz, raiz->dir);
         }else{
             if(valor < raiz->valor){
                 buscar(raiz->esq, valor);
