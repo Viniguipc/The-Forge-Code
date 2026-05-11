@@ -1,3 +1,10 @@
+//structs
+struct pessoa {
+    nome: String,
+    idade: u32,
+    altura: f32,
+}
+
 fn main() {
     println!("Hello, world!"); // Função de escrita no terminal
 
@@ -44,4 +51,15 @@ fn main() {
         // 1..=10 é inclusivo, ou seja, de 1 até 10, sem o = seria até 9
         println!("{}", i);
     }
+
+    //Criando uma instância da struct pessoa
+    let pessoa1 = pessoa {
+        nome: String::from("Vinicius"), // Para valores de tipos imutaveis é preciso clonar
+        idade: 22,
+        altura: 1.75,
+    };
+    println!(
+        "A pessoa se chama {}, tem {} anos e mede {:.2}m de altura",
+        pessoa1.nome, pessoa1.idade, pessoa1.altura
+    );
 }
