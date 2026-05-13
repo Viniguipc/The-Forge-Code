@@ -2,9 +2,9 @@
 //Lista Duplamente Encadeada (LDE)
 //Arvore Binaria de Busca (ABB)
 
-use std::io;
+use std::io::{self, Write};
 
-struct lista {}
+struct Lista {}
 
 fn menu() -> u8 {
     let mut op: u8 = 0;
@@ -14,7 +14,15 @@ fn menu() -> u8 {
         println!("3 - Exibir lista");
         println!("4 - Sair");
         print!("Digite sua opção: ");
-        io::stdin().read_line(&mut op).expect("Falha ao ler linha");
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("Falha ao ler linha");
+        
+        op = match input.trim().parse() {
+            Ok(num) => num,
+            Err(_) => 0,
+        };
     }
 
     op

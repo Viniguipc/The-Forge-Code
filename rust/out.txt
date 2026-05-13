@@ -1,0 +1,98 @@
+=== Saida para entrada: 1 ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Inserir elemento
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: 2 ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Remover elemento
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: 3 ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Exibir lista
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: 4 ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: 5 ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: 1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: A ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: 1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: B ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: 1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: - ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: 1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
+=== Saida para entrada: ? ===
+1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: 1 - Inserir elemento
+2 - Remover elemento
+3 - Exibir lista
+4 - Sair
+Digite sua op+º+úo: Sair
+
