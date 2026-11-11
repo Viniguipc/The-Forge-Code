@@ -58,5 +58,12 @@ dkms.conf
 target/
 **/*.rs.bk
 
-# NodeJS
+# NodeJS / TypeScript / Vite
 node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+

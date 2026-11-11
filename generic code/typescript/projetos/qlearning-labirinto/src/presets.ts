@@ -1,0 +1,84 @@
+import type { RawCellTuple } from './types';
+
+/**
+ * Preset 1: Labirinto 3x3 do Enunciado (Prof. Andre Borin Soares)
+ * Formato: [L, C, CN, CL, CS, CO, TC]
+ */
+export const MAZE_3X3_PROFESSOR: RawCellTuple[] = [
+  [0, 0, 0, 1, 0, 0, 1], // (0,0) Início (azul)
+  [0, 1, 0, 1, 1, 1, 0],
+  [0, 2, 0, 0, 0, 1, 0],
+  [1, 0, 0, 1, 1, 0, 0],
+  [1, 1, 1, 1, 1, 1, 0],
+  [1, 2, 0, 0, 0, 1, 3], // (1,2) Objetivo (verde)
+  [2, 0, 1, 0, 0, 0, 0],
+  [2, 1, 1, 1, 0, 0, 0],
+  [2, 2, 0, 0, 0, 1, 2], // (2,2) Buraco (vermelho)
+];
+
+/**
+ * Preset 2: Labirinto 5x5 Customizado
+ * - 1 célula inicial (0,0)
+ * - 1 célula objetivo (4,4)
+ * - 4 células de buraco: (1,1), (2,3), (3,1), (4,2)
+ * - Múltiplos caminhos possíveis (8, 10 e 12 passos) demonstrando a escolha do menor caminho.
+ */
+export const MAZE_5X5_CUSTOM: RawCellTuple[] = [
+  // Linha 0
+  [0, 0, 0, 1, 1, 0, 1], // (0,0) Início
+  [0, 1, 0, 0, 1, 1, 0],
+  [0, 2, 0, 1, 1, 0, 0],
+  [0, 3, 0, 1, 0, 1, 0],
+  [0, 4, 0, 0, 1, 1, 0],
+
+  // Linha 1
+  [1, 0, 1, 0, 1, 0, 0],
+  [1, 1, 1, 0, 0, 0, 2], // (1,1) Buraco
+  [1, 2, 1, 1, 1, 0, 0],
+  [1, 3, 0, 1, 1, 1, 0],
+  [1, 4, 1, 0, 1, 1, 0],
+
+  // Linha 2
+  [2, 0, 1, 1, 1, 0, 0],
+  [2, 1, 0, 1, 0, 1, 0],
+  [2, 2, 1, 0, 1, 1, 0],
+  [2, 3, 1, 0, 0, 0, 2], // (2,3) Buraco
+  [2, 4, 1, 0, 1, 0, 0],
+
+  // Linha 3
+  [3, 0, 1, 0, 1, 0, 0],
+  [3, 1, 0, 0, 1, 0, 2], // (3,1) Buraco
+  [3, 2, 1, 1, 1, 0, 0],
+  [3, 3, 0, 1, 1, 1, 0],
+  [3, 4, 1, 0, 1, 1, 0],
+
+  // Linha 4
+  [4, 0, 1, 1, 0, 0, 0],
+  [4, 1, 1, 0, 0, 1, 0],
+  [4, 2, 1, 0, 0, 0, 2], // (4,2) Buraco
+  [4, 3, 1, 1, 0, 0, 0],
+  [4, 4, 1, 0, 0, 1, 3], // (4,4) Objetivo
+];
+
+export interface MazePreset {
+  id: string;
+  name: string;
+  description: string;
+  data: RawCellTuple[];
+}
+
+export const MAZE_PRESETS: MazePreset[] = [
+  {
+    id: '3x3-professor',
+    name: '3×3 do Professor (Padrão)',
+    description: 'Labirinto clássico 3×3 do enunciado: início em (0,0), objetivo em (1,2) e buraco em (2,2).',
+    data: MAZE_3X3_PROFESSOR,
+  },
+  {
+    id: '5x5-custom',
+    name: '5×5 Customizado (Múltiplos Caminhos)',
+    description: 'Grid 5×5 com 4 buracos, armadilhas e múltiplos caminhos (8, 10 e 12 passos) até (4,4).',
+    data: MAZE_5X5_CUSTOM,
+  },
+];
+

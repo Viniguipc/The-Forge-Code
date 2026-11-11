@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Q-Learning Labirinto — Inteligência Artificial</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="header-title">
+          <div class="logo-badge">IA</div>
+          <div>
+            <h1>Aprendizado por Reforço (Q-Learning) — Saída de Labirinto</h1>
+            <p class="subtitle">
+              Agente generalista para qualquer grid <code>[L, C, CN, CL, CS, CO, TC]</code> com
+              árvore completa de caminhos sem ciclos
+            </p>
+          </div>
+        </div>
+        <div class="header-pills">
+          <span class="pill" id="badge-grid-size">Grid: 3×3</span>
+          <span class="pill" id="badge-episodes">Episódios: 0</span>
+          <span class="pill" id="badge-epsilon">ε: 1.000</span>
+          <span class="pill pill-status" id="badge-goal-status">Não treinado</span>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <!-- COLUNA 1: LABIRINTO + CAMINHO ÓTIMO + Q-TABLE -->
+        <section class="panel panel-maze">
+          <div class="panel-header">
+            <h2>1. Ambiente do Labirinto</h2>
+            <span class="panel-hint" id="maze-dimensions-label">9 células (3 linhas × 3 colunas)</span>
+          </div>
+
+          <div id="validation-banner" class="validation-banner hidden"></div>
+
+          <div class="maze-stage">
+            <div id="maze-grid" class="maze-grid" aria-label="Grid visual do labirinto"></div>
+          </div>
+
+          <div class="legend">
+            <span class="legend-item"><i class="swatch swatch-start"></i> Início (TC=1)</span>
+            <span class="legend-item"><i class="swatch swatch-goal"></i> Objetivo (TC=3)</span>
+            <span class="legend-item"><i class="swatch swatch-hole"></i> Buraco (TC=2)</span>
+            <span class="legend-item"><i class="swatch swatch-empty"></i> Livre (TC=0)</span>
+            <span class="legend-item"><i class="swatch swatch-path"></i> Caminho Ótimo</span>
+            <span class="legend-item"><i class="swatch swatch-agent"></i> Agente</span>
+          </div>
+
+          <div class="best-path-box">
+            <div class="best-path-header">
+              <strong>Caminho Ótimo Aprendido</strong>
+              <span id="best-path-badge" class="status-tag status-neutral">Aguardando treino</span>
+            </div>
+            <div id="best-path-text" class="best-path-text">
+              Treine o agente para descobrir a política ótima.
+            </div>
+          </div>
+
+          <div class="qtable-section">
+            <div class="panel-subheader">
+              <h3>Q-Table Completa</h3>
+              <span class="muted">Equação de Bellman: Q(s,a) ← Q(s,a) + α [r + γ max Q(s',a') − Q(s,a)]</span>
+            </div>
+            <div class="table-scroll">
+              <table class="q-table" id="q-table">
+                <thead>
+                  <tr>
+                    <th>Célula</th>
+                    <th>Tipo</th>
+                    <th>N (↑)</th>
+                    <th>L (→)</th>
+                    <th>S (↓)</th>
+                    <th>O (←)</th>
+                    <th>Melhor</th>
+                    <th>Max Q</th>
+                  </tr>
+                </thead>
+                <tbody id="q-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- COLUNA 2: CONTROLES, HIPERPARÂMETROS E MÉTRICAS -->
+        <section class="panel panel-controls">
+          <div class="panel-header">
+            <h2>2. Controles &amp; Hiperparâmetros</h2>
+          </div>
+
+          <div class="control-group">
+            <label for="preset-select">Preset do Labirinto</label>
+            <select id="preset-select">
+              <option value="3x3-professor">3×3 do Professor (Padrão)</option>
+              <option value="5x5-custom">5×5 Customizado (Múltiplos Caminhos)</option>
+              <option value="custom-json">Editor JSON Personalizado (Qualquer Grid)</option>
+            </select>
+            <p class="field-desc" id="preset-description"></p>
+          </div>
+
+          <div class="json-editor-wrapper" id="json-editor-wrapper">
+            <div class="json-editor-header">
+              <label for="maze-json-input">
+                Lista de Células <code>[L, C, CN, CL, CS, CO, TC]</code>
+              </label>
+              <button type="button" class="btn btn-small btn-secondary" id="btn-format-json">
+                Formatar
+              </button>
+            </div>
+            <textarea
+              id="maze-json-input"
+              spellcheck="false"
+              rows="7"
+              placeholder="[[0,0,0,1,0,0,1], ...]"
+            ></textarea>
+            <div class="json-actions">
+              <button type="button" class="btn btn-small btn-primary" id="btn-apply-json">
+                Aplicar Labirinto JSON
+              </button>
+              <span id="json-error" class="json-error"></span>
+            </div>
+          </div>
+
+          <div class="hyperparams-grid">
+            <div class="param-card">
+              <div class="param-label">
+                <label for="param-alpha">α (Aprendizado)</label>
+                <span class="param-val" id="val-alpha">0.10</span>
+              </div>
+              <input id="param-alpha" type="range" min="0.01" max="1" step="0.01" value="0.1" />
+            </div>
+
+            <div class="param-card">
+              <div class="param-label">
+                <label for="param-gamma">γ (Desconto)</label>
+                <span class="param-val" id="val-gamma">0.90</span>
+              </div>
+              <input id="param-gamma" type="range" min="0.1" max="0.99" step="0.01" value="0.9" />
+            </div>
+
+            <div class="param-card">
+              <div class="param-label">
+                <label for="param-epsilon">ε Inicial (Exploração)</label>
+                <span class="param-val" id="val-epsilon">1.00</span>
+              </div>
+              <input id="param-epsilon" type="range" min="0" max="1" step="0.05" value="1" />
+            </div>
+
+            <div class="param-card">
+              <div class="param-label">
+                <label for="param-speed">Velocidade (ms/passo)</label>
+                <span class="param-val" id="val-speed">120ms</span>
+              </div>
+              <input id="param-speed" type="range" min="15" max="600" step="15" value="120" />
+            </div>
+
+            <div class="param-card">
+              <div class="param-label">
+                <label for="param-episodes">Episódios (Treino Rápido)</label>
+              </div>
+              <input id="param-episodes" type="number" min="1" max="20000" step="50" value="300" />
+            </div>
+
+            <div class="param-card">
+              <div class="param-label">
+                <label for="param-max-steps">Máx. Passos / Episódio</label>
+              </div>
+              <input id="param-max-steps" type="number" min="10" max="1000" step="10" value="100" />
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="param-restrict-valid" checked />
+            <span>Restringir ε-greedy às conexões válidas (CN/CL/CS/CO = 1)</span>
+          </label>
+
+          <div class="actions-stack">
+            <button type="button" class="btn btn-primary" id="btn-train-instant">
+              Treinar Instantâneo (300 episódios)
+            </button>
+            <button type="button" class="btn btn-accent" id="btn-train-visual">
+              Treinar Visualmente (Passo a Passo)
+            </button>
+            <button type="button" class="btn btn-success" id="btn-run-best">
+              Executar Melhor Caminho Aprendido
+            </button>
+            <button type="button" class="btn btn-outline" id="btn-reset">
+              Resetar Q-Table
+            </button>
+          </div>
+
+          <div class="metrics-box">
+            <div class="metrics-grid">
+              <div class="metric-item">
+                <span class="metric-label">Episódios</span>
+                <strong id="metric-episodes">0</strong>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Taxa de Sucesso</span>
+                <strong id="metric-success-rate">0%</strong>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Vitórias / Buracos</span>
+                <strong id="metric-outcomes">0 / 0</strong>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Última Recompensa</span>
+                <strong id="metric-last-reward">—</strong>
+              </div>
+            </div>
+            <div class="live-log" id="live-log">
+              Pronto para treinar. Selecione um labirinto e clique em Treinar.
+            </div>
+            <div class="chart-wrapper">
+              <div class="chart-title">Histórico de Recompensa por Episódio</div>
+              <svg id="reward-chart" viewBox="0 0 360 90" preserveAspectRatio="none"></svg>
+            </div>
+          </div>
+        </section>
+
+        <!-- COLUNA 3: ÁRVORE DE ESTADOS / CAMINHOS -->
+        <section class="panel panel-tree">
+          <div class="panel-header">
+            <h2>3. Árvore de Estados &amp; Caminhos</h2>
+            <div class="tab-buttons" role="tablist">
+              <button
+                type="button"
+                class="tab-btn active"
+                id="tab-tree-list"
+                data-tree-view="list"
+              >
+                Árvore Hierárquica
+              </button>
+              <button type="button" class="tab-btn" id="tab-tree-svg" data-tree-view="svg">
+                Diagrama SVG
+              </button>
+            </div>
+          </div>
+
+          <div class="tree-stats" id="tree-stats"></div>
+
+          <div class="tree-toolbar">
+            <button type="button" class="btn btn-small btn-outline" id="btn-expand-all">
+              Expandir Tudo
+            </button>
+            <button type="button" class="btn btn-small btn-outline" id="btn-collapse-all">
+              Recolher Tudo
+            </button>
+            <label class="checkbox-inline">
+              <input type="checkbox" id="chk-only-goal-branches" />
+              <span>Filtrar ramos até Objetivo</span>
+            </label>
+          </div>
+
+          <div id="tree-warning" class="tree-warning hidden"></div>
+
+          <div id="tree-list-container" class="tree-container"></div>
+          <div id="tree-svg-container" class="tree-svg-container hidden"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+
