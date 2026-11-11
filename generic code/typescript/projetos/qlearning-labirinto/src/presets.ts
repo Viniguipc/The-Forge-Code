@@ -235,6 +235,79 @@ export const MAZE_6X6_CLASSIC: RawCellTuple[] = [
   [5, 5, 1, 0, 0, 1, 3], // Objetivo
 ];
 
+/**
+ * Preset 7: Labirinto 4x4 Diamante Simétrico (4 Rotas Empatadas de 6 Passos)
+ * - Início em (0,0), Objetivo em (3,3)
+ * - Buracos em (1,1) e (2,2)
+ */
+export const MAZE_4X4_DIAMOND: RawCellTuple[] = [
+  // Linha 0
+  [0, 0, 0, 1, 1, 0, 1], // Início
+  [0, 1, 0, 1, 1, 1, 0],
+  [0, 2, 0, 1, 1, 1, 0],
+  [0, 3, 0, 0, 1, 1, 0],
+
+  // Linha 1
+  [1, 0, 1, 1, 1, 0, 0],
+  [1, 1, 1, 0, 0, 1, 2], // Buraco
+  [1, 2, 1, 1, 0, 0, 0],
+  [1, 3, 1, 0, 1, 1, 0],
+
+  // Linha 2
+  [2, 0, 1, 1, 1, 0, 0],
+  [2, 1, 0, 0, 1, 1, 0],
+  [2, 2, 0, 1, 1, 0, 2], // Buraco
+  [2, 3, 1, 0, 1, 1, 0],
+
+  // Linha 3
+  [3, 0, 1, 1, 0, 0, 0],
+  [3, 1, 1, 1, 0, 1, 0],
+  [3, 2, 1, 1, 0, 1, 0],
+  [3, 3, 1, 0, 0, 1, 3], // Objetivo
+];
+
+/**
+ * Preset 8: Labirinto 5x5 Rota Norte vs. Rota Sul (Simétrico, 8 Passos)
+ * - Início em (2,0), Objetivo em (2,4)
+ * - Buracos centrais em (1,2), (2,2), (3,2)
+ */
+export const MAZE_5X5_NORTH_SOUTH: RawCellTuple[] = [
+  // Linha 0
+  [0, 0, 0, 1, 1, 0, 0],
+  [0, 1, 0, 1, 1, 1, 0],
+  [0, 2, 0, 1, 1, 1, 0],
+  [0, 3, 0, 1, 1, 1, 0],
+  [0, 4, 0, 0, 1, 1, 0],
+
+  // Linha 1
+  [1, 0, 1, 1, 1, 0, 0],
+  [1, 1, 1, 1, 0, 1, 0],
+  [1, 2, 1, 1, 0, 1, 2], // Buraco
+  [1, 3, 1, 1, 0, 1, 0],
+  [1, 4, 1, 0, 1, 1, 0],
+
+  // Linha 2
+  [2, 0, 1, 0, 1, 0, 1], // Início (sobe para Norte ou desce para Sul)
+  [2, 1, 0, 1, 0, 0, 0],
+  [2, 2, 0, 1, 0, 1, 2], // Buraco
+  [2, 3, 0, 0, 0, 1, 0],
+  [2, 4, 1, 0, 1, 0, 3], // Objetivo
+
+  // Linha 3
+  [3, 0, 1, 1, 1, 0, 0],
+  [3, 1, 0, 1, 1, 1, 0],
+  [3, 2, 0, 1, 1, 1, 2], // Buraco
+  [3, 3, 0, 1, 1, 1, 0],
+  [3, 4, 1, 0, 1, 1, 0],
+
+  // Linha 4
+  [4, 0, 1, 1, 0, 0, 0],
+  [4, 1, 1, 1, 0, 1, 0],
+  [4, 2, 1, 1, 0, 1, 0],
+  [4, 3, 1, 1, 0, 1, 0],
+  [4, 4, 1, 0, 0, 1, 0],
+];
+
 export const MAZE_PRESETS: MazePreset[] = [
   {
     id: '3x3-professor',
@@ -247,6 +320,12 @@ export const MAZE_PRESETS: MazePreset[] = [
     name: '4×4 Origem Inferior & Armadilhas',
     description: 'Grid 4×4 começando em (3,0) até (0,3), com 3 buracos estratégicos e rotas alternativas.',
     data: MAZE_4X4_TRAPS,
+  },
+  {
+    id: '4x4-diamond',
+    name: '4×4 Simétrico (4 Rotas Empatadas)',
+    description: 'Grid 4×4 de (0,0) até (3,3) com 4 caminhos ótimos de 6 passos — ótimo para ver a IA alternar rotas ao resetar.',
+    data: MAZE_4X4_DIAMOND,
   },
   {
     id: '4x6-rect',
@@ -265,6 +344,12 @@ export const MAZE_PRESETS: MazePreset[] = [
     name: '5×5 Dois Objetivos (Perto vs. Longe)',
     description: 'Grid 5×5 com dois objetivos (TC=3): mostra a IA preferindo a saída de menor custo.',
     data: MAZE_5X5_DUAL_GOAL,
+  },
+  {
+    id: '5x5-north-south',
+    name: '5×5 Rota Norte vs. Sul (Empate)',
+    description: 'Grid 5×5 espelhado de (2,0) até (2,4): a IA pode convergir tanto pela metade superior quanto pela inferior.',
+    data: MAZE_5X5_NORTH_SOUTH,
   },
   {
     id: '6x6-classic',
