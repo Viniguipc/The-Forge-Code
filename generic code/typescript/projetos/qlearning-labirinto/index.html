@@ -297,8 +297,51 @@
 
           <div id="tree-warning" class="tree-warning hidden"></div>
 
-          <div id="tree-list-container" class="tree-container"></div>
-          <div id="tree-svg-container" class="tree-svg-container hidden"></div>
+          <div id="tree-panel-list" class="tree-subpanel">
+            <div class="subtab-bar" role="tablist" aria-label="Modo da árvore hierárquica">
+              <button
+                type="button"
+                class="subtab-btn active"
+                data-subtab-view="list"
+                data-algo-mode="dfs"
+              >
+                Busca em Profundidade (DFS)
+              </button>
+              <button
+                type="button"
+                class="subtab-btn"
+                data-subtab-view="list"
+                data-algo-mode="qlearning"
+              >
+                Q-Learning (Política IA)
+              </button>
+            </div>
+            <div id="tree-algo-card-list" class="algo-info-card"></div>
+            <div id="tree-list-container" class="tree-container"></div>
+          </div>
+
+          <div id="tree-panel-svg" class="tree-subpanel hidden">
+            <div class="subtab-bar" role="tablist" aria-label="Modo do diagrama SVG">
+              <button
+                type="button"
+                class="subtab-btn active"
+                data-subtab-view="svg"
+                data-algo-mode="dfs"
+              >
+                Busca em Profundidade (DFS)
+              </button>
+              <button
+                type="button"
+                class="subtab-btn"
+                data-subtab-view="svg"
+                data-algo-mode="qlearning"
+              >
+                Q-Learning (Política IA)
+              </button>
+            </div>
+            <div id="tree-algo-card-svg" class="algo-info-card"></div>
+            <div id="tree-svg-container" class="tree-svg-container"></div>
+          </div>
         </section>
       </main>
     </div>

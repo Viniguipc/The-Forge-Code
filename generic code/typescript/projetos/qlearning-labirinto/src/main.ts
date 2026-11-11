@@ -8,6 +8,7 @@ import { MAZE_PRESETS } from './presets';
 import { QLearningAgent } from './qlearning';
 import { buildPathTree, getTreeStats } from './tree';
 import type {
+  BestPathResult,
   CellType,
   Direction,
   Position,
@@ -37,7 +38,13 @@ let agentPosition: Position;
 
 let visualTimerId: number | null = null;
 let playbackTimerId: number | null = null;
+type TreeAlgoMode = 'dfs' | 'qlearning';
+
 let treeViewMode: 'list' | 'svg' = 'list';
+const treeAlgoByView: Record<'list' | 'svg', TreeAlgoMode> = {
+  list: 'dfs',
+  svg: 'dfs',
+};
 let defaultExpandedDepth = 6;
 
 const MIN_TREE_ZOOM = 0.2;
@@ -96,10 +103,17 @@ const elRewardChart = document.getElementById('reward-chart') as unknown as SVGS
 
 const elTreeStats = document.getElementById('tree-stats') as HTMLDivElement;
 const elTreeWarning = document.getElementById('tree-warning') as HTMLDivElement;
+const elTreePanelList = document.getElementById('tree-panel-list') as HTMLDivElement;
+const elTreePanelSvg = document.getElementById('tree-panel-svg') as HTMLDivElement;
+const elTreeAlgoCardList = document.getElementById('tree-algo-card-list') as HTMLDivElement;
+const elTreeAlgoCardSvg = document.getElementById('tree-algo-card-svg') as HTMLDivElement;
 const elTreeListContainer = document.getElementById('tree-list-container') as HTMLDivElement;
 const elTreeSvgContainer = document.getElementById('tree-svg-container') as HTMLDivElement;
 const elTabTreeList = document.getElementById('tab-tree-list') as HTMLButtonElement;
 const elTabTreeSvg = document.getElementById('tab-tree-svg') as HTMLButtonElement;
+const elSubtabButtons = Array.from(
+  document.querySelectorAll<HTMLButtonElement>('.subtab-btn')
+);
 const elBtnExpandAll = document.getElementById('btn-expand-all') as HTMLButtonElement;
 const elBtnCollapseAll = document.getElementById('btn-collapse-all') as HTMLButtonElement;
 const elChkOnlyGoalBranches = document.getElementById('chk-only-goal-branches') as HTMLInputElement;
@@ -595,15 +609,114 @@ function renderTree(): void {
   }
 
   if (treeViewMode === 'list') {
-    elTreeListContainer.classList.remove('hidden');
-    elTreeSvgContainer.classList.add('hidden');
-    renderHierarchicalTree();
+    elTreePanelList.classList.remove('hidden');
+    elTreePanelSvg.classList.add('hidden');
+    const mode = treeAlgoByView.list;
+    const learned = getLearnedTreeHighlight();
+    renderAlgoInfoCard(elTreeAlgoCardList, mode, learned);
+    renderHierarchicalTree(mode, learned);
   } else {
-    elTreeListContainer.classList.add('hidden');
-    elTreeSvgContainer.classList.remove('hidden');
-    renderSvgTree();
+    elTreePanelList.classList.add('hidden');
+    elTreePanelSvg.classList.remove('hidden');
+    const mode = treeAlgoByView.svg;
+    const learned = getLearnedTreeHighlight();
+    renderAlgoInfoCard(elTreeAlgoCardSvg, mode, learned);
+    renderSvgTree(mode, learned);
   }
+  syncSubtabButtons();
   updateZoomUi();
+}
+
+interface LearnedTreeHighlight {
+  episodes: number;
+  best: BestPathResult;
+  stepByNode: Map<TreeNode, number>;
+}
+
+function getActiveAlgoMode(): TreeAlgoMode {
+  return treeAlgoByView[treeViewMode];
+}
+
+function getLearnedTreeHighlight(): LearnedTreeHighlight {
+  const episodes = agent.getEpisodesTrained();
+  const best = agent.getBestPath();
+  const stepByNode = new Map<TreeNode, number>();
+
+  if (episodes > 0 && best.path.length > 0) {
+    let cursor: TreeNode | undefined = pathTree;
+    if (cursor.row === best.path[0].row && cursor.col === best.path[0].col) {
+      stepByNode.set(cursor, 0);
+      for (let i = 1; i < best.path.length; i++) {
+        const nextPos = best.path[i];
+        const nextNode: TreeNode | undefined = cursor.children.find(
+          (c) => c.row === nextPos.row && c.col === nextPos.col
+        );
+        if (!nextNode) break;
+        stepByNode.set(nextNode, i);
+        cursor = nextNode;
+      }
+    }
+  }
+
+  return { episodes, best, stepByNode };
+}
+
+function renderAlgoInfoCard(
+  cardEl: HTMLDivElement,
+  mode: TreeAlgoMode,
+  learned: LearnedTreeHighlight
+): void {
+  cardEl.classList.remove('mode-qlearning', 'is-solved');
+  cardEl.replaceChildren();
+
+  const title = document.createElement('strong');
+  const text = document.createElement('span');
+
+  if (mode === 'dfs') {
+    title.textContent = 'Busca em Profundidade (DFS): ';
+    text.textContent =
+      'Enumera todos os caminhos possíveis a partir do início usando apenas as paredes (CN/CL/CS/CO). Por isso a árvore existe mesmo com a Q-Table zerada.';
+  } else {
+    cardEl.classList.add('mode-qlearning');
+    if (learned.episodes === 0) {
+      title.textContent = 'Q-Learning (Política IA): ';
+      text.textContent =
+        'A Q-Table está zerada (0 episódios). A IA ainda não conhece a saída — treine o agente para destacar aqui o ramo escolhido por reforço.';
+    } else if (learned.best.reachedGoal) {
+      cardEl.classList.add('is-solved');
+      title.textContent = 'Q-Learning (Política Aprendida): ';
+      const pathText = learned.best.path
+        .map((p) => `(${p.row},${p.col})`)
+        .join(' → ');
+      text.textContent = `Após ${learned.episodes} episódios, a IA convergiu para o ramo destacado (${learned.best.actions.length} passos, retorno ${learned.best.totalReward}): ${pathText}.`;
+    } else {
+      title.textContent = 'Q-Learning (Em Treinamento): ';
+      text.textContent = `Após ${learned.episodes} episódios, a política atual ainda não atingiu o objetivo (${learned.best.reason}). Treine mais episódios para estabilizar o caminho.`;
+    }
+  }
+
+  cardEl.append(title, text);
+}
+
+function renderEmptyQPolicyState(container: HTMLElement): void {
+  const box = document.createElement('div');
+  box.className = 'tree-empty-state';
+  const strong = document.createElement('strong');
+  strong.textContent = 'Q-Table zerada — nenhum caminho aprendido pela IA ainda';
+  const desc = document.createElement('span');
+  desc.textContent =
+    'Diferente da Busca em Profundidade (DFS), o Q-Learning começa sem conhecer o mapa. Clique em "Treinar Instantâneo" ou "Treinar Visualmente" para ver o ramo escolhido aparecer aqui.';
+  box.append(strong, desc);
+  container.replaceChildren(box);
+}
+
+function syncSubtabButtons(): void {
+  for (const btn of elSubtabButtons) {
+    const view = btn.dataset.subtabView as 'list' | 'svg' | undefined;
+    const mode = btn.dataset.algoMode as TreeAlgoMode | undefined;
+    if (!view || !mode) continue;
+    btn.classList.toggle('active', treeAlgoByView[view] === mode);
+  }
 }
 
 function clampTreeZoom(value: number): number {
@@ -679,7 +792,9 @@ function fitSvgToContainer(): void {
 function createTreeListNode(
   node: TreeNode,
   onlyGoalBranches: boolean,
-  isRoot: boolean
+  isRoot: boolean,
+  algoMode: TreeAlgoMode,
+  learned: LearnedTreeHighlight
 ): HTMLLIElement | null {
   if (onlyGoalBranches && !node.leadsToGoal) {
     return null;
@@ -689,6 +804,9 @@ function createTreeListNode(
     (c) => !onlyGoalBranches || c.leadsToGoal
   );
   const hasChildren = visibleChildren.length > 0;
+  const policyStep = learned.stepByNode.get(node);
+  const isPolicyMode = algoMode === 'qlearning';
+  const isOnPolicy = isPolicyMode && policyStep !== undefined;
 
   const li = document.createElement('li');
   li.className = 'tree-li';
@@ -700,9 +818,14 @@ function createTreeListNode(
   else if (node.outcome === 'hole') row.classList.add('is-hole');
   else if (node.outcome === 'dead_end') row.classList.add('is-dead-end');
   if (node.leadsToGoal) row.classList.add('on-goal-branch');
+  if (isOnPolicy) {
+    row.classList.add('is-q-policy');
+  } else if (isPolicyMode && learned.stepByNode.size > 0) {
+    row.classList.add('is-dimmed-branch');
+  }
 
   let childUl: HTMLUListElement | null = null;
-  const initiallyExpanded = node.depth < defaultExpandedDepth;
+  const initiallyExpanded = node.depth < defaultExpandedDepth || isOnPolicy;
 
   if (hasChildren) {
     const toggleBtn = document.createElement('button');
@@ -728,6 +851,13 @@ function createTreeListNode(
   const label = document.createElement('span');
   label.textContent = `#${node.cellId} (${node.row},${node.col})`;
   row.appendChild(label);
+
+  if (isOnPolicy && policyStep !== undefined) {
+    const qBadge = document.createElement('span');
+    qBadge.className = 'tree-q-badge';
+    qBadge.textContent = `★ Passo ${policyStep}`;
+    row.appendChild(qBadge);
+  }
 
   if (node.outcome === 'goal') {
     const tag = document.createElement('span');
@@ -756,7 +886,13 @@ function createTreeListNode(
     }
 
     for (const child of visibleChildren) {
-      const childLi = createTreeListNode(child, onlyGoalBranches, false);
+      const childLi = createTreeListNode(
+        child,
+        onlyGoalBranches,
+        false,
+        algoMode,
+        learned
+      );
       if (childLi) childUl.appendChild(childLi);
     }
 
@@ -766,13 +902,27 @@ function createTreeListNode(
   return li;
 }
 
-function renderHierarchicalTree(): void {
+function renderHierarchicalTree(
+  algoMode: TreeAlgoMode,
+  learned: LearnedTreeHighlight
+): void {
+  if (algoMode === 'qlearning' && learned.episodes === 0) {
+    renderEmptyQPolicyState(elTreeListContainer);
+    return;
+  }
+
   const onlyGoalBranches = elChkOnlyGoalBranches.checked;
   const rootUl = document.createElement('ul');
   rootUl.className = 'tree-ul tree-root';
   rootUl.style.setProperty('zoom', String(listZoom));
 
-  const rootLi = createTreeListNode(pathTree, onlyGoalBranches, true);
+  const rootLi = createTreeListNode(
+    pathTree,
+    onlyGoalBranches,
+    true,
+    algoMode,
+    learned
+  );
   if (rootLi) {
     rootUl.appendChild(rootLi);
     elTreeListContainer.replaceChildren(rootUl);
@@ -791,13 +941,23 @@ interface PositionedTreeNode {
   children: PositionedTreeNode[];
 }
 
-function renderSvgTree(): void {
+function renderSvgTree(
+  algoMode: TreeAlgoMode,
+  learned: LearnedTreeHighlight
+): void {
   const onlyGoal = elChkOnlyGoalBranches.checked;
   const svgNS = 'http://www.w3.org/2000/svg';
   elTreeSvgContainer.replaceChildren();
   activeTreeSvg = null;
   svgBaseWidth = 0;
   svgBaseHeight = 0;
+
+  if (algoMode === 'qlearning' && learned.episodes === 0) {
+    renderEmptyQPolicyState(elTreeSvgContainer);
+    return;
+  }
+
+  const isPolicyMode = algoMode === 'qlearning' && learned.stepByNode.size > 0;
 
   // Limite de proteção para diagramas SVG muito gigantes
   const stats = getTreeStats(pathTree);
@@ -861,6 +1021,11 @@ function renderSvgTree(): void {
 
   function drawEdges(item: PositionedTreeNode): void {
     for (const child of item.children) {
+      const edgeOnPolicy =
+        isPolicyMode &&
+        learned.stepByNode.has(item.node) &&
+        learned.stepByNode.has(child.node);
+
       const line = document.createElementNS(svgNS, 'line');
       line.setAttribute('x1', String(item.x));
       line.setAttribute('y1', String(item.y + 16));
@@ -868,13 +1033,21 @@ function renderSvgTree(): void {
       line.setAttribute('y2', String(child.y - 16));
       line.setAttribute(
         'stroke',
-        child.node.leadsToGoal
-          ? '#16a34a'
-          : child.node.outcome === 'hole'
-            ? '#dc2626'
-            : '#94a3b8'
+        edgeOnPolicy
+          ? '#f59e0b'
+          : child.node.leadsToGoal
+            ? '#16a34a'
+            : child.node.outcome === 'hole'
+              ? '#dc2626'
+              : '#94a3b8'
       );
-      line.setAttribute('stroke-width', child.node.leadsToGoal ? '2.5' : '1.5');
+      line.setAttribute(
+        'stroke-width',
+        edgeOnPolicy ? '4' : child.node.leadsToGoal ? '2.5' : '1.5'
+      );
+      if (isPolicyMode && !edgeOnPolicy) {
+        line.setAttribute('opacity', '0.25');
+      }
       svg.appendChild(line);
 
       if (child.node.directionFromParent) {
@@ -885,7 +1058,10 @@ function renderSvgTree(): void {
         dirText.setAttribute('y', String(midY));
         dirText.setAttribute('font-size', '10');
         dirText.setAttribute('font-weight', '700');
-        dirText.setAttribute('fill', '#475569');
+        dirText.setAttribute('fill', edgeOnPolicy ? '#b45309' : '#475569');
+        if (isPolicyMode && !edgeOnPolicy) {
+          dirText.setAttribute('opacity', '0.25');
+        }
         dirText.textContent = DIRECTION_ARROWS[child.node.directionFromParent];
         svg.appendChild(dirText);
       }
@@ -896,6 +1072,26 @@ function renderSvgTree(): void {
 
   function drawNodes(item: PositionedTreeNode, isRoot: boolean): void {
     const g = document.createElementNS(svgNS, 'g');
+    const policyStep = learned.stepByNode.get(item.node);
+    const nodeOnPolicy = isPolicyMode && policyStep !== undefined;
+
+    if (isPolicyMode && !nodeOnPolicy) {
+      g.setAttribute('opacity', '0.28');
+    }
+
+    if (nodeOnPolicy) {
+      const halo = document.createElementNS(svgNS, 'rect');
+      halo.setAttribute('x', String(item.x - 32));
+      halo.setAttribute('y', String(item.y - 20));
+      halo.setAttribute('width', '64');
+      halo.setAttribute('height', '40');
+      halo.setAttribute('rx', '10');
+      halo.setAttribute('fill', 'none');
+      halo.setAttribute('stroke', '#f59e0b');
+      halo.setAttribute('stroke-width', '2.5');
+      g.appendChild(halo);
+    }
+
     const rect = document.createElementNS(svgNS, 'rect');
     rect.setAttribute('x', String(item.x - 28));
     rect.setAttribute('y', String(item.y - 16));
@@ -919,6 +1115,10 @@ function renderSvgTree(): void {
       fill = '#ef4444';
       stroke = '#b91c1c';
       textFill = '#ffffff';
+    } else if (nodeOnPolicy) {
+      fill = '#fef3c7';
+      stroke = '#d97706';
+      textFill = '#78350f';
     } else if (item.node.leadsToGoal) {
       fill = '#f0fdf4';
       stroke = '#4ade80';
@@ -926,7 +1126,7 @@ function renderSvgTree(): void {
 
     rect.setAttribute('fill', fill);
     rect.setAttribute('stroke', stroke);
-    rect.setAttribute('stroke-width', '2');
+    rect.setAttribute('stroke-width', nodeOnPolicy ? '2.5' : '2');
     g.appendChild(rect);
 
     const txtId = document.createElementNS(svgNS, 'text');
@@ -947,6 +1147,27 @@ function renderSvgTree(): void {
     txtCoord.setAttribute('fill', textFill);
     txtCoord.textContent = `(${item.node.row},${item.node.col})`;
     g.appendChild(txtCoord);
+
+    if (nodeOnPolicy && policyStep !== undefined) {
+      const badgeBg = document.createElementNS(svgNS, 'rect');
+      badgeBg.setAttribute('x', String(item.x + 12));
+      badgeBg.setAttribute('y', String(item.y - 24));
+      badgeBg.setAttribute('width', '22');
+      badgeBg.setAttribute('height', '13');
+      badgeBg.setAttribute('rx', '6');
+      badgeBg.setAttribute('fill', '#d97706');
+      g.appendChild(badgeBg);
+
+      const badgeTxt = document.createElementNS(svgNS, 'text');
+      badgeTxt.setAttribute('x', String(item.x + 23));
+      badgeTxt.setAttribute('y', String(item.y - 14.5));
+      badgeTxt.setAttribute('text-anchor', 'middle');
+      badgeTxt.setAttribute('font-size', '8.5');
+      badgeTxt.setAttribute('font-weight', '700');
+      badgeTxt.setAttribute('fill', '#ffffff');
+      badgeTxt.textContent = `P${policyStep}`;
+      g.appendChild(badgeTxt);
+    }
 
     svg.appendChild(g);
 
@@ -976,6 +1197,12 @@ function renderSvgTree(): void {
 // AÇÕES DE TREINAMENTO E CONTROLES
 // ============================================================================
 
+function refreshTreeIfPolicyVisible(): void {
+  if (getActiveAlgoMode() === 'qlearning') {
+    renderTree();
+  }
+}
+
 function handleTrainInstant(): void {
   stopAnimations();
   syncHyperparamLabels();
@@ -984,6 +1211,7 @@ function handleTrainInstant(): void {
   const batch = agent.trainEpisodes(hp.episodes);
   agentPosition = { ...env.startPosition };
   renderAll();
+  refreshTreeIfPolicyVisible();
 
   const goalsInBatch = batch.filter((b) => b.outcome === 'goal').length;
   const best = agent.getBestPath();
@@ -1014,6 +1242,9 @@ function handleToggleVisualTraining(): void {
       : { ...step.nextState };
 
     renderAll();
+    if (step.episodeFinished) {
+      refreshTreeIfPolicyVisible();
+    }
 
     const outcomeNote = step.done
       ? step.outcome === 'goal'
@@ -1068,6 +1299,7 @@ function handleReset(): void {
   agent.reset();
   agentPosition = { ...env.startPosition };
   renderAll();
+  refreshTreeIfPolicyVisible();
   elLiveLog.textContent = 'Q-Table resetada para 0.';
 }
 
@@ -1146,6 +1378,16 @@ function bindEvents(): void {
     elTabTreeList.classList.remove('active');
     renderTree();
   });
+
+  for (const btn of elSubtabButtons) {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.subtabView as 'list' | 'svg' | undefined;
+      const mode = btn.dataset.algoMode as TreeAlgoMode | undefined;
+      if (!view || !mode) return;
+      treeAlgoByView[view] = mode;
+      renderTree();
+    });
+  }
 
   elBtnExpandAll.addEventListener('click', () => {
     defaultExpandedDepth = 999;
