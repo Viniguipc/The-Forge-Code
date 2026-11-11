@@ -40,6 +40,15 @@ let playbackTimerId: number | null = null;
 let treeViewMode: 'list' | 'svg' = 'list';
 let defaultExpandedDepth = 6;
 
+const MIN_TREE_ZOOM = 0.2;
+const MAX_TREE_ZOOM = 4;
+let svgZoom = 1;
+let listZoom = 1;
+let svgBaseWidth = 0;
+let svgBaseHeight = 0;
+let activeTreeSvg: SVGSVGElement | null = null;
+let shouldAutoFitSvg = true;
+
 // Elementos do DOM
 const elMazeGrid = document.getElementById('maze-grid') as HTMLDivElement;
 const elMazeDimLabel = document.getElementById('maze-dimensions-label') as HTMLSpanElement;
@@ -94,6 +103,12 @@ const elTabTreeSvg = document.getElementById('tab-tree-svg') as HTMLButtonElemen
 const elBtnExpandAll = document.getElementById('btn-expand-all') as HTMLButtonElement;
 const elBtnCollapseAll = document.getElementById('btn-collapse-all') as HTMLButtonElement;
 const elChkOnlyGoalBranches = document.getElementById('chk-only-goal-branches') as HTMLInputElement;
+const elBtnTreeZoomOut = document.getElementById('btn-tree-zoom-out') as HTMLButtonElement;
+const elBtnTreeZoomIn = document.getElementById('btn-tree-zoom-in') as HTMLButtonElement;
+const elBtnTreeZoomReset = document.getElementById('btn-tree-zoom-reset') as HTMLButtonElement;
+const elBtnTreeZoomFit = document.getElementById('btn-tree-zoom-fit') as HTMLButtonElement;
+const elTreeZoomLabel = document.getElementById('tree-zoom-label') as HTMLSpanElement;
+const elTreeZoomHint = document.getElementById('tree-zoom-hint') as HTMLSpanElement;
 
 function stopAnimations(): void {
   if (visualTimerId !== null) {
@@ -165,6 +180,7 @@ function formatTuplesForTextarea(tuples: RawCellTuple[]): string {
 function loadMaze(rawTuples: RawCellTuple[], descriptionText: string): void {
   stopAnimations();
   elJsonError.textContent = '';
+  shouldAutoFitSvg = true;
 
   const newEnv = new MazeEnvironment(rawTuples);
   env = newEnv;
@@ -587,6 +603,77 @@ function renderTree(): void {
     elTreeSvgContainer.classList.remove('hidden');
     renderSvgTree();
   }
+  updateZoomUi();
+}
+
+function clampTreeZoom(value: number): number {
+  return Math.min(MAX_TREE_ZOOM, Math.max(MIN_TREE_ZOOM, value));
+}
+
+function updateZoomUi(): void {
+  const isSvg = treeViewMode === 'svg';
+  const activeZoom = isSvg ? svgZoom : listZoom;
+  elTreeZoomLabel.textContent = `${Math.round(activeZoom * 100)}%`;
+  elTreeZoomHint.textContent = isSvg
+    ? 'Scroll do mouse: zoom • Arraste: mover'
+    : 'Ctrl + Scroll ou botões: zoom';
+  elBtnTreeZoomFit.classList.toggle('hidden', !isSvg);
+}
+
+function applyListZoom(newZoom: number): void {
+  listZoom = clampTreeZoom(newZoom);
+  const rootUl = elTreeListContainer.querySelector('.tree-root') as HTMLElement | null;
+  if (rootUl) {
+    rootUl.style.setProperty('zoom', String(listZoom));
+  }
+  updateZoomUi();
+}
+
+function applySvgZoom(
+  newZoom: number,
+  anchor?: { clientX: number; clientY: number }
+): void {
+  const clamped = clampTreeZoom(newZoom);
+  if (!activeTreeSvg || svgBaseWidth === 0 || svgBaseHeight === 0) {
+    svgZoom = clamped;
+    updateZoomUi();
+    return;
+  }
+
+  const oldZoom = svgZoom;
+  const rect = elTreeSvgContainer.getBoundingClientRect();
+  const viewWidth = elTreeSvgContainer.clientWidth || rect.width;
+  const viewHeight = elTreeSvgContainer.clientHeight || rect.height;
+
+  const anchorX = anchor ? anchor.clientX - rect.left : viewWidth / 2;
+  const anchorY = anchor ? anchor.clientY - rect.top : viewHeight / 2;
+  const contentX = (elTreeSvgContainer.scrollLeft + anchorX) / oldZoom;
+  const contentY = (elTreeSvgContainer.scrollTop + anchorY) / oldZoom;
+
+  svgZoom = clamped;
+  activeTreeSvg.style.width = `${svgBaseWidth * svgZoom}px`;
+  activeTreeSvg.style.height = `${svgBaseHeight * svgZoom}px`;
+
+  elTreeSvgContainer.scrollLeft = Math.max(0, contentX * svgZoom - anchorX);
+  elTreeSvgContainer.scrollTop = Math.max(0, contentY * svgZoom - anchorY);
+  updateZoomUi();
+}
+
+function fitSvgToContainer(): void {
+  if (!activeTreeSvg || svgBaseWidth === 0 || svgBaseHeight === 0) return;
+  const availW = elTreeSvgContainer.clientWidth;
+  const availH = elTreeSvgContainer.clientHeight;
+  if (availW <= 0 || availH <= 0) return;
+
+  const fitZoom = clampTreeZoom(
+    Math.min(availW / svgBaseWidth, availH / svgBaseHeight, 1)
+  );
+  svgZoom = fitZoom;
+  activeTreeSvg.style.width = `${svgBaseWidth * svgZoom}px`;
+  activeTreeSvg.style.height = `${svgBaseHeight * svgZoom}px`;
+  elTreeSvgContainer.scrollLeft = 0;
+  elTreeSvgContainer.scrollTop = 0;
+  updateZoomUi();
 }
 
 function createTreeListNode(
@@ -683,6 +770,7 @@ function renderHierarchicalTree(): void {
   const onlyGoalBranches = elChkOnlyGoalBranches.checked;
   const rootUl = document.createElement('ul');
   rootUl.className = 'tree-ul tree-root';
+  rootUl.style.setProperty('zoom', String(listZoom));
 
   const rootLi = createTreeListNode(pathTree, onlyGoalBranches, true);
   if (rootLi) {
@@ -707,6 +795,9 @@ function renderSvgTree(): void {
   const onlyGoal = elChkOnlyGoalBranches.checked;
   const svgNS = 'http://www.w3.org/2000/svg';
   elTreeSvgContainer.replaceChildren();
+  activeTreeSvg = null;
+  svgBaseWidth = 0;
+  svgBaseHeight = 0;
 
   // Limite de proteção para diagramas SVG muito gigantes
   const stats = getTreeStats(pathTree);
@@ -867,6 +958,18 @@ function renderSvgTree(): void {
   drawEdges(rootPos);
   drawNodes(rootPos, true);
   elTreeSvgContainer.appendChild(svg);
+
+  activeTreeSvg = svg;
+  svgBaseWidth = width;
+  svgBaseHeight = height;
+
+  if (shouldAutoFitSvg && elTreeSvgContainer.clientWidth > 0) {
+    shouldAutoFitSvg = false;
+    fitSvgToContainer();
+  } else {
+    svg.style.width = `${width * svgZoom}px`;
+    svg.style.height = `${height * svgZoom}px`;
+  }
 }
 
 // ============================================================================
@@ -1057,6 +1160,93 @@ function bindEvents(): void {
   elChkOnlyGoalBranches.addEventListener('change', () => {
     renderTree();
   });
+
+  elBtnTreeZoomIn.addEventListener('click', () => {
+    if (treeViewMode === 'svg') {
+      applySvgZoom(svgZoom * 1.2);
+    } else {
+      applyListZoom(listZoom * 1.1);
+    }
+  });
+
+  elBtnTreeZoomOut.addEventListener('click', () => {
+    if (treeViewMode === 'svg') {
+      applySvgZoom(svgZoom / 1.2);
+    } else {
+      applyListZoom(listZoom / 1.1);
+    }
+  });
+
+  elBtnTreeZoomReset.addEventListener('click', () => {
+    if (treeViewMode === 'svg') {
+      applySvgZoom(1);
+    } else {
+      applyListZoom(1);
+    }
+  });
+
+  elBtnTreeZoomFit.addEventListener('click', () => {
+    if (treeViewMode === 'svg') {
+      fitSvgToContainer();
+    }
+  });
+
+  elTreeSvgContainer.addEventListener(
+    'wheel',
+    (e) => {
+      if (!activeTreeSvg) return;
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.14 : 1 / 1.14;
+      applySvgZoom(svgZoom * factor, {
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
+    },
+    { passive: false }
+  );
+
+  elTreeListContainer.addEventListener(
+    'wheel',
+    (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      applyListZoom(listZoom * factor);
+    },
+    { passive: false }
+  );
+
+  let isPanningSvg = false;
+  let panStartX = 0;
+  let panStartY = 0;
+  let panStartScrollLeft = 0;
+  let panStartScrollTop = 0;
+
+  elTreeSvgContainer.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || !activeTreeSvg) return;
+    isPanningSvg = true;
+    panStartX = e.clientX;
+    panStartY = e.clientY;
+    panStartScrollLeft = elTreeSvgContainer.scrollLeft;
+    panStartScrollTop = elTreeSvgContainer.scrollTop;
+    elTreeSvgContainer.classList.add('is-panning');
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanningSvg) return;
+    elTreeSvgContainer.scrollLeft = panStartScrollLeft - (e.clientX - panStartX);
+    elTreeSvgContainer.scrollTop = panStartScrollTop - (e.clientY - panStartY);
+  });
+
+  const stopSvgPan = () => {
+    if (!isPanningSvg) return;
+    isPanningSvg = false;
+    elTreeSvgContainer.classList.remove('is-panning');
+  };
+
+  window.addEventListener('mouseup', stopSvgPan);
+  window.addEventListener('blur', stopSvgPan);
 }
 
 // Inicialização

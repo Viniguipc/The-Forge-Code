@@ -878,6 +878,38 @@ input[type='range'] {
   gap: 8px;
 }
 
+.tree-zoom-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.tree-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tree-zoom-label {
+  min-width: 46px;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.tree-zoom-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 .tree-warning {
   font-size: 0.76rem;
   background: #fffbeb;
@@ -898,11 +930,24 @@ input[type='range'] {
 
 .tree-svg-container {
   max-height: 670px;
+  min-height: 360px;
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-alt);
-  padding: 8px;
+  padding: 0;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+
+.tree-svg-container.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.tree-svg-container svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 /* Collapsible Tree */
