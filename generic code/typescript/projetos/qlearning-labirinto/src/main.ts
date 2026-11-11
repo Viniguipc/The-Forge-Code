@@ -1249,7 +1249,22 @@ function bindEvents(): void {
   window.addEventListener('blur', stopSvgPan);
 }
 
+function populatePresetSelect(): void {
+  elPresetSelect.replaceChildren();
+  for (const preset of MAZE_PRESETS) {
+    const opt = document.createElement('option');
+    opt.value = preset.id;
+    opt.textContent = preset.name;
+    elPresetSelect.appendChild(opt);
+  }
+  const customOpt = document.createElement('option');
+  customOpt.value = 'custom-json';
+  customOpt.textContent = 'Editor JSON Personalizado (Qualquer Grid)';
+  elPresetSelect.appendChild(customOpt);
+}
+
 // Inicialização
+populatePresetSelect();
 bindEvents();
 syncHyperparamLabels();
 loadMaze(MAZE_PRESETS[0].data, MAZE_PRESETS[0].description);
