@@ -24,10 +24,14 @@ typedef enum {
 } AgentRole;
 
 typedef enum {
-    PERS_ANALYTICAL = 0, // Foca em contradicoes e fake tasks
-    PERS_CAUTIOUS   = 1, // Exige alta confianca para acusar/votar
-    PERS_IMPULSIVE  = 2, // Acusa e vota rapido com pouca evidencia
-    PERS_SOCIAL     = 3  // Valoriza alibis e confirma testemunhas
+    PERS_ASTUTO     = 0, // Alta deducao e melhor impostor
+    PERS_CETICO     = 1, // Exige alta evidencia para votar
+    PERS_BURRO      = 2, // Confunde alibis e se distrai
+    PERS_BRINCALHAO = 3, // Faz acusacoes aleatorias e causa caos
+    PERS_PARANOICO  = 4, // Suspeita rapido de qualquer aproximacao
+    PERS_ANALITICO  = 5, // Foca em fake tasks e contradicoes
+    PERS_SOCIAL     = 6, // Influencia votos e confia em alibis
+    PERS_MEDROSO    = 7  // Prioriza religar luzes e evita risco
 } Personality;
 
 typedef enum {
@@ -114,6 +118,7 @@ typedef struct {
     int id;
     const char *name;
     const char *color;
+    const char *symbol;
     AgentRole role;
     Personality personality;
     bool alive;

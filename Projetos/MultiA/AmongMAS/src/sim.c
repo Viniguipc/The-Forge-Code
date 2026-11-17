@@ -6,14 +6,64 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *AGENT_NAMES[MAX_AGENTS] = {
-    "Alfa", "Bravo", "Charlie", "Delta", "Echo",
-    "Foxtrot", "Golf", "Hotel", "India", "Juliet"
-};
+typedef struct {
+    const char *name;
+    const char *color;
+    const char *symbol;
+    Personality pers;
+} AgentProfile;
 
-static const char *AGENT_COLORS[MAX_AGENTS] = {
-    "#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#a855f7",
-    "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#e2e8f0"
+#define POOL_SIZE 40
+
+static const AgentProfile AGENT_POOL[POOL_SIZE] = {
+    // 5 Astutos
+    {"Vega",    "#38bdf8", "★", PERS_ASTUTO},
+    {"Kael",    "#818cf8", "◈", PERS_ASTUTO},
+    {"Nyx",     "#c084fc", "✦", PERS_ASTUTO},
+    {"Soren",   "#2dd4bf", "❖", PERS_ASTUTO},
+    {"Kira",    "#f43f5e", "✪", PERS_ASTUTO},
+    // 5 Ceticos
+    {"Orion",   "#64748b", "■", PERS_CETICO},
+    {"Dante",   "#94a3b8", "▲", PERS_CETICO},
+    {"Otto",    "#475569", "◆", PERS_CETICO},
+    {"Boris",   "#78716c", "⬢", PERS_CETICO},
+    {"Iris",    "#0ea5e9", "◎", PERS_CETICO},
+    // 5 Burros
+    {"Pipoca",  "#fbbf24", "●", PERS_BURRO},
+    {"Bidu",    "#f59e0b", "◉", PERS_BURRO},
+    {"Caco",    "#a3e635", "◌", PERS_BURRO},
+    {"Guga",    "#fb923c", "△", PERS_BURRO},
+    {"Zeca",    "#eab308", "□", PERS_BURRO},
+    // 5 Brincalhoes
+    {"Loki",    "#ec4899", "♠", PERS_BRINCALHAO},
+    {"Roxy",    "#f472b6", "♥", PERS_BRINCALHAO},
+    {"Tito",    "#e879f9", "♣", PERS_BRINCALHAO},
+    {"Lola",    "#fb7185", "♦", PERS_BRINCALHAO},
+    {"Pingo",   "#34d399", "☺", PERS_BRINCALHAO},
+    // 5 Paranoicos
+    {"Zed",     "#ef4444", "⚡", PERS_PARANOICO},
+    {"Ragnar",  "#dc2626", "✖", PERS_PARANOICO},
+    {"Igor",    "#f97316", "▲", PERS_PARANOICO},
+    {"Fenix",   "#ea580c", "✹", PERS_PARANOICO},
+    {"Tadeu",   "#e11d48", "✚", PERS_PARANOICO},
+    // 5 Analiticos
+    {"Atlas",   "#3b82f6", "⊕", PERS_ANALITICO},
+    {"Maya",    "#06b6d4", "✧", PERS_ANALITICO},
+    {"Juno",    "#22d3ee", "❄", PERS_ANALITICO},
+    {"Yuki",    "#60a5fa", "✳", PERS_ANALITICO},
+    {"Cleo",    "#a78bfa", "❂", PERS_ANALITICO},
+    // 5 Sociais
+    {"Luna",    "#10b981", "☀", PERS_SOCIAL},
+    {"Bia",     "#4ade80", "✿", PERS_SOCIAL},
+    {"Milo",    "#84cc16", "♪", PERS_SOCIAL},
+    {"Sol",     "#fde047", "☼", PERS_SOCIAL},
+    {"Vivi",    "#22c55e", "❀", PERS_SOCIAL},
+    // 5 Medrosos
+    {"Bento",   "#cbd5e1", "◐", PERS_MEDROSO},
+    {"Neko",    "#d8b4fe", "◑", PERS_MEDROSO},
+    {"Nora",    "#bae6fd", "◒", PERS_MEDROSO},
+    {"Teca",    "#fed7aa", "◓", PERS_MEDROSO},
+    {"Zara",    "#fbcfe8", "◔", PERS_MEDROSO}
 };
 
 static float clampf(float v, float lo, float hi) {
@@ -163,6 +213,16 @@ void sim_reset(SimState *s, int impostor_count) {
     s->next_event_id = 1;
     s->sabotage_cooldown = 25;
 
+    // Pick 10 random profiles from the 40-agent pool
+    int pool_idx[POOL_SIZE];
+    for (int i = 0; i < POOL_SIZE; i++) pool_idx[i] = i;
+    for (int i = POOL_SIZE - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        int tmp = pool_idx[i];
+        pool_idx[i] = pool_idx[j];
+        pool_idx[j] = tmp;
+    }
+
     // Pick random impostors
     int indices[MAX_AGENTS];
     for (int i = 0; i < MAX_AGENTS; i++) indices[i] = i;
@@ -182,11 +242,13 @@ void sim_reset(SimState *s, int impostor_count) {
 
     for (int i = 0; i < MAX_AGENTS; i++) {
         Agent *a = &s->agents[i];
+        const AgentProfile *prof = &AGENT_POOL[pool_idx[i]];
         a->id = i;
-        a->name = AGENT_NAMES[i];
-        a->color = AGENT_COLORS[i];
+        a->name = prof->name;
+        a->color = prof->color;
+        a->symbol = prof->symbol;
         a->role = is_imp[i] ? ROLE_IMPOSTOR : ROLE_CREWMATE;
-        a->personality = (Personality)(i % 4);
+        a->personality = prof->pers;
         a->alive = true;
         a->ejected = false;
         a->activity = ACT_WALKING;
@@ -323,13 +385,15 @@ static void step_perception_and_suspicion(SimState *s) {
                     }
                 }
 
-                // Stalking check
+                // Stalking check (Paranoico triggers faster)
+                int stalk_lim = (a->personality == PERS_PARANOICO) ? 2 : 3;
                 if (a->role == ROLE_CREWMATE && a->activity == ACT_WALKING &&
                     b->activity == ACT_WALKING && b_room >= 0 && b_room == a->current_room) {
                     if (a->last_room_of[j] != b_room) {
                         a->follow_streak[j]++;
-                        if (a->follow_streak[j] >= 3) {
-                            a->suspicion[j] = clampf(a->suspicion[j] + 0.22f, 0.0f, 1.0f);
+                        if (a->follow_streak[j] >= stalk_lim) {
+                            float bump = (a->personality == PERS_PARANOICO) ? 0.30f : 0.20f;
+                            a->suspicion[j] = clampf(a->suspicion[j] + bump, 0.0f, 1.0f);
                             snprintf(a->last_thought, sizeof(a->last_thought),
                                      "%s esta me seguindo!", b->name);
                             a->follow_streak[j] = 0;
@@ -339,12 +403,13 @@ static void step_perception_and_suspicion(SimState *s) {
                     a->follow_streak[j] = 0;
                 }
 
-                // Analytical fake-task check
-                if (a->role == ROLE_CREWMATE && a->personality == PERS_ANALYTICAL &&
+                // Analytical / Astuto fake-task check
+                if (a->role == ROLE_CREWMATE &&
+                    (a->personality == PERS_ANALITICO || a->personality == PERS_ASTUTO) &&
                     b->activity == ACT_FAKE_TASK &&
                     s->global_tasks_done == s->prev_global_tasks_done &&
-                    (rand() % 100) < 6) {
-                    a->suspicion[j] = clampf(a->suspicion[j] + 0.16f, 0.0f, 1.0f);
+                    (rand() % 100) < (a->personality == PERS_ASTUTO ? 10 : 7)) {
+                    a->suspicion[j] = clampf(a->suspicion[j] + 0.18f, 0.0f, 1.0f);
                     snprintf(a->last_thought, sizeof(a->last_thought),
                              "%s parece fingir task...", b->name);
                 }
@@ -470,9 +535,11 @@ static void step_agent_roaming(SimState *s, Agent *a) {
             }
         }
     } else {
-        // Crewmate: if lights are out and nearby, occasionally go fix lights at Eletrica (task 7)
+        // Crewmate: if lights are out, Medroso/Social/Astuto rush to fix lights at Eletrica
+        int fix_chance = (a->personality == PERS_MEDROSO) ? 55 :
+                         (a->personality == PERS_BURRO) ? 8 : 25;
         if (s->lights_sabotaged_timer > 0 && a->activity == ACT_WALKING &&
-            a->personality != PERS_IMPULSIVE && (rand() % 100) < 25) {
+            (rand() % 100) < fix_chance) {
             a->activity = ACT_FIXING_LIGHTS;
             set_agent_path_to(a, MAP_TASKS[7].x, MAP_TASKS[7].y);
             snprintf(a->last_thought, sizeof(a->last_thought), "Indo religar luzes");
@@ -548,9 +615,11 @@ static void step_meeting(SimState *s) {
             Agent *a = &s->agents[i];
             if (!a->alive) continue;
             if (a->role == ROLE_IMPOSTOR) {
-                // Bluff a plausible room (avoid body room)
                 int fake_room = (s->meeting_body_room + 1 + (rand() % 4)) % MAX_ROOMS;
                 a->claimed_room = fake_room;
+            } else if (a->personality == PERS_BURRO && (rand() % 100) < 25) {
+                // Burro sometimes forgets and says the wrong room!
+                a->claimed_room = rand() % MAX_ROOMS;
             }
             push_event(s, EVT_ALIBI, i, -1, "%s: Estava em %s.",
                        a->name,
@@ -567,10 +636,11 @@ static void step_meeting(SimState *s) {
                 if (i == j || !s->agents[j].alive) continue;
                 if (a->role == ROLE_IMPOSTOR && s->agents[j].role == ROLE_IMPOSTOR) continue;
 
-                // If 'a' recently saw 'j' in another room != j->claimed_room
                 if (a->last_room_of[j] >= 0 && (int)s->tick - a->last_seen_by_tick[j] <= 22 &&
                     a->last_room_of[j] != s->agents[j].claimed_room && a->role == ROLE_CREWMATE) {
-                    a->suspicion[j] = clampf(a->suspicion[j] + 0.30f, 0.0f, 1.0f);
+                    float boost = (a->personality == PERS_ASTUTO || a->personality == PERS_ANALITICO) ? 0.42f :
+                                  (a->personality == PERS_BURRO) ? 0.15f : 0.30f;
+                    a->suspicion[j] = clampf(a->suspicion[j] + boost, 0.0f, 1.0f);
                     push_event(s, EVT_ACCUSE, i, j,
                                "%s: Contradicao! Vi %s em %s, nao em %s!",
                                a->name, s->agents[j].name,
@@ -580,7 +650,17 @@ static void step_meeting(SimState *s) {
                 }
             }
 
-            // Pick top suspect to accuse or vouch
+            // Brincalhao sometimes makes a chaotic joke accusation
+            if (a->personality == PERS_BRINCALHAO && (rand() % 100) < 35) {
+                int rnd = rand() % MAX_AGENTS;
+                if (rnd != i && s->agents[rnd].alive) {
+                    push_event(s, EVT_ACCUSE, i, rnd,
+                               "%s (Brincalhao): Foi %s, confia!", a->name, s->agents[rnd].name);
+                }
+                continue;
+            }
+
+            // Pick top suspect to accuse
             int top = -1;
             float top_s = 0.0f;
             for (int j = 0; j < MAX_AGENTS; j++) {
@@ -591,15 +671,18 @@ static void step_meeting(SimState *s) {
                     top = j;
                 }
             }
-            if (top >= 0 && top_s >= 0.42f) {
+            float acc_thresh = (a->personality == PERS_CETICO) ? 0.58f :
+                               (a->personality == PERS_PARANOICO) ? 0.30f : 0.42f;
+            if (top >= 0 && top_s >= acc_thresh) {
                 push_event(s, EVT_ACCUSE, i, top,
                            "%s acusa %s (suspeita %.0f%%).",
                            a->name, s->agents[top].name, top_s * 100.0f);
-                // Social influence on other crewmates
+                float inf = (a->personality == PERS_SOCIAL) ? 0.14f :
+                            (a->personality == PERS_ASTUTO) ? 0.12f : 0.07f;
                 for (int k = 0; k < MAX_AGENTS; k++) {
                     if (k != i && k != top && s->agents[k].alive && s->agents[k].role == ROLE_CREWMATE) {
                         s->agents[k].suspicion[top] = clampf(
-                            s->agents[k].suspicion[top] + 0.08f, 0.0f, 1.0f);
+                            s->agents[k].suspicion[top] + inf, 0.0f, 1.0f);
                     }
                 }
             }
@@ -611,8 +694,10 @@ static void step_meeting(SimState *s) {
             if (!a->alive) continue;
 
             float thresh = 0.45f;
-            if (a->personality == PERS_IMPULSIVE) thresh = 0.32f;
-            else if (a->personality == PERS_CAUTIOUS) thresh = 0.62f;
+            if (a->personality == PERS_PARANOICO) thresh = 0.28f;
+            else if (a->personality == PERS_CETICO) thresh = 0.65f;
+            else if (a->personality == PERS_MEDROSO) thresh = 0.52f;
+            else if (a->personality == PERS_ASTUTO) thresh = 0.40f;
 
             int best = -1;
             float best_s = thresh;
@@ -622,6 +707,19 @@ static void step_meeting(SimState *s) {
                 if (a->suspicion[j] > best_s) {
                     best_s = a->suspicion[j];
                     best = j;
+                }
+            }
+
+            // Burro / Brincalhao sometimes vote randomly if undecided
+            if (best == -1 && a->role == ROLE_CREWMATE &&
+                (a->personality == PERS_BURRO || a->personality == PERS_BRINCALHAO) &&
+                (rand() % 100) < 30) {
+                for (int tries = 0; tries < 6; tries++) {
+                    int c = rand() % MAX_AGENTS;
+                    if (c != i && s->agents[c].alive) {
+                        best = c;
+                        break;
+                    }
                 }
             }
 
@@ -740,11 +838,11 @@ int sim_serialize_json(const SimState *s, char *buf, int buf_size) {
             }
         }
         pos += snprintf(buf + pos, buf_size - pos,
-            "%s{\"id\":%d,\"name\":\"%s\",\"color\":\"%s\",\"role\":%d,"
+            "%s{\"id\":%d,\"name\":\"%s\",\"color\":\"%s\",\"sym\":\"%s\",\"role\":%d,"
             "\"pers\":%d,\"alive\":%s,\"ejected\":%s,\"x\":%.1f,\"y\":%.1f,"
             "\"room\":%d,\"act\":%d,\"tasks\":%d,\"top_sus\":%d,\"top_sus_val\":%.2f,"
             "\"thought\":\"%s\"}",
-            i > 0 ? "," : "", a->id, a->name, a->color, (int)a->role,
+            i > 0 ? "," : "", a->id, a->name, a->color, a->symbol, (int)a->role,
             (int)a->personality, a->alive ? "true" : "false", a->ejected ? "true" : "false",
             a->x, a->y, a->current_room, (int)a->activity, a->tasks_completed,
             top_sus, top_val, a->last_thought);

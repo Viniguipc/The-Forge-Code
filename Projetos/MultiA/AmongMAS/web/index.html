@@ -254,7 +254,7 @@ const WALLS = [
   [370,560,630,560],[370,370,370,560],[630,370,630,560],[370,370,470,370],[530,370,630,370],
   [730,560,960,560],[730,370,730,560],[960,370,960,560],[730,370,815,370],[875,370,960,370]
 ];
-const PERS_NAMES = ["Analitico", "Cauteloso", "Impulsivo", "Social"];
+const PERS_NAMES = ["Astuto", "Cetico", "Burro", "Brincalhao", "Paranoico", "Analitico", "Social", "Medroso"];
 const ACT_NAMES = ["Andando", "Fazendo Task", "Fingindo Task", "Cacando!", "Fugindo!", "Religando Luz", "Morto"];
 
 const canvas = document.getElementById("map");
@@ -368,17 +368,23 @@ function draw(s) {
   for (const a of s.agents) {
     if (!a.alive) continue;
     ctx.beginPath();
-    ctx.arc(a.x, a.y, 12, 0, Math.PI * 2);
+    ctx.arc(a.x, a.y, 13, 0, Math.PI * 2);
     ctx.fillStyle = a.color;
     ctx.fill();
     ctx.lineWidth = (reveal && a.role === 1) ? 3 : 2;
     ctx.strokeStyle = (reveal && a.role === 1) ? "#ef4444" : "#0f172a";
     ctx.stroke();
 
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 12px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(a.sym || "●", a.x, a.y + 0.5);
+    ctx.textBaseline = "alphabetic";
+
     ctx.fillStyle = "#f8fafc";
     ctx.font = "bold 11px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText(a.name + (reveal && a.role === 1 ? " [IMP]" : ""), a.x, a.y - 17);
+    ctx.fillText(a.name + (reveal && a.role === 1 ? " [IMP]" : ""), a.x, a.y - 18);
   }
   ctx.textAlign = "left";
 
@@ -428,7 +434,7 @@ function renderUI(s) {
     const status = !a.alive ? (a.ejected ? "Ejetado" : "Eliminado") : ACT_NAMES[a.act];
     return `<div class="agent-item ${a.alive ? "" : "dead"}">
       <div class="agent-top">
-        <span><span class="dot" style="background:${a.color}"></span>${a.name}</span>
+        <span><span class="dot" style="background:${a.color}"></span>${a.sym || ""} ${a.name}</span>
         ${roleTag}
       </div>
       <div class="agent-sub">${PERS_NAMES[a.pers]} | ${status}</div>
