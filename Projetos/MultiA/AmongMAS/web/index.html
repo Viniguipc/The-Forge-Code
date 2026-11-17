@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>AmongMAS — Multiagente Espacial (C11)</title>
+<style>
+  :root {
+    --bg: #0b0f17;
+    --panel: #131a26;
+    --border: #233044;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --danger: #ef4444;
+    --ok: #10b981;
+    --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+  .pill {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #1e293b;
+    border: 1px solid var(--border);
+  }
+  .pill-ok { background: #064e3b; color: #6ee7b7; border-color: #059669; }
+  .pill-warn { background: #78350f; color: #fcd34d; border-color: #d97706; }
+  .pill-danger { background: #7f1d1d; color: #fca5a5; border-color: #dc2626; }
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  button, select {
+    background: #1e293b;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  button:hover { background: #283548; }
+  button.primary { background: #0284c7; border-color: #0ea5e9; }
+  button.danger { background: #991b1b; border-color: #dc2626; }
+  label { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 10px;
+    padding: 10px;
+    min-height: 0;
+  }
+  .left { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  .task-bar-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .bar-bg {
+    flex: 1;
+    height: 12px;
+    background: #0f172a;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    width: 0%;
+    transition: width 0.2s;
+  }
+  .canvas-wrap {
+    flex: 1;
+    background: #070b12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  canvas { max-width: 100%; max-height: 100%; }
+  .right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .card-hdr {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .agents-list {
+    padding: 6px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: 290px;
+  }
+  .agent-item {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .agent-item.dead { opacity: 0.45; }
+  .agent-top { display: flex; align-items: center; justify-content: space-between; font-weight: 700; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .role-imp { color: #f87171; font-size: 10px; }
+  .role-crew { color: #6ee7b7; font-size: 10px; }
+  .agent-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .events-wrap { flex: 1; min-height: 0; }
+  .events-list {
+    padding: 8px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .ev {
+    padding: 5px 8px;
+    border-radius: 5px;
+    background: #0f172a;
+    border-left: 3px solid #475569;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .ev-kill { border-left-color: #ef4444; background: #1f1215; }
+  .ev-report { border-left-color: #f59e0b; background: #1f1a10; }
+  .ev-accuse { border-left-color: #f97316; }
+  .ev-alibi { border-left-color: #38bdf8; }
+  .ev-vote { border-left-color: #a855f7; }
+  .ev-eject { border-left-color: #ec4899; font-weight: 600; }
+  .ev-sabotage { border-left-color: #eab308; background: #1c190c; }
+  .ev-tick { color: var(--muted); font-size: 10px; margin-right: 5px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span>AmongMAS</span>
+    <span class="pill">C11 + SSE</span>
+    <span id="phase-pill" class="pill pill-ok">ROAMING</span>
+    <span id="tick-pill" class="pill">Tick 0</span>
+  </div>
+  <div class="controls">
+    <button id="btn-play" class="primary">Pausar</button>
+    <button id="btn-step">Passo</button>
+    <label>Vel:
+      <input id="speed" type="range" min="40" max="400" value="140" style="width:80px">
+    </label>
+    <label>Impostores:
+      <select id="imp-select">
+        <option value="1" selected>1 Impostor</option>
+        <option value="2">2 Impostores</option>
+        <option value="3">3 Impostores</option>
+      </select>
+    </label>
+    <button id="btn-sabotage" class="danger">Sabotar Luz</button>
+    <button id="btn-reset">Resetar</button>
+    <label><input id="chk-vision" type="checkbox" checked> Visão</label>
+    <label><input id="chk-reveal" type="checkbox" checked> Observador</label>
+  </div>
+</header>
+
+<div class="main">
+  <div class="left">
+    <div class="task-bar-wrap">
+      <strong style="font-size:12px;">Tasks da Nave:</strong>
+      <div class="bar-bg"><div id="task-fill" class="bar-fill"></div></div>
+      <span id="task-text" style="font-weight:700; min-width:55px; text-align:right;">0 / 0</span>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="map" width="1000" height="600"></canvas>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="card">
+      <div class="card-hdr">Agentes (10) & Suspeitas</div>
+      <div id="agents-list" class="agents-list"></div>
+    </div>
+    <div class="card events-wrap">
+      <div class="card-hdr">Log de Percepção, Álibis & Debate</div>
+      <div id="events-list" class="events-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROOMS = [
+  { name: "Enfermaria", x: 40, y: 40, w: 230, h: 190 },
+  { name: "Refeitorio", x: 370, y: 40, w: 260, h: 190 },
+  { name: "Navegacao",  x: 730, y: 40, w: 230, h: 190 },
+  { name: "Seguranca",  x: 40, y: 370, w: 230, h: 190 },
+  { name: "Eletrica",   x: 370, y: 370, w: 260, h: 190 },
+  { name: "Reator",     x: 730, y: 370, w: 230, h: 190 }
+];
+const TASKS = [
+  [90,150],[220,95],[430,90],[575,95],[890,155],
+  [780,95],[210,500],[430,500],[560,420],[885,495]
+];
+const VENTS = [[80,85],[80,515],[590,515],[920,85]];
+const WALLS = [
+  [40,40,270,40],[40,40,40,230],[270,40,270,230],[40,230,125,230],[185,230,270,230],
+  [370,40,630,40],[370,40,370,230],[630,40,630,230],[370,230,470,230],[530,230,630,230],
+  [730,40,960,40],[730,40,730,230],[960,40,960,230],[730,230,815,230],[875,230,960,230],
+  [40,560,270,560],[40,370,40,560],[270,370,270,560],[40,370,125,370],[185,370,270,370],
+  [370,560,630,560],[370,370,370,560],[630,370,630,560],[370,370,470,370],[530,370,630,370],
+  [730,560,960,560],[730,370,730,560],[960,370,960,560],[730,370,815,370],[875,370,960,370]
+];
+const PERS_NAMES = ["Analitico", "Cauteloso", "Impulsivo", "Social"];
+const ACT_NAMES = ["Andando", "Fazendo Task", "Fingindo Task", "Cacando!", "Fugindo!", "Religando Luz", "Morto"];
+
+const canvas = document.getElementById("map");
+const ctx = canvas.getContext("2d");
+let latest = null;
+
+function sendCmd(qs) {
+  fetch("/cmd?" + qs, { method: "POST" }).catch(() => {});
+}
+
+document.getElementById("btn-play").onclick = () => {
+  if (!latest) return;
+  sendCmd(latest.paused ? "action=play" : "action=pause");
+};
+document.getElementById("btn-step").onclick = () => sendCmd("action=step");
+document.getElementById("btn-sabotage").onclick = () => sendCmd("action=sabotage");
+document.getElementById("btn-reset").onclick = () => {
+  const imp = document.getElementById("imp-select").value;
+  sendCmd("action=reset&impostors=" + imp);
+};
+document.getElementById("imp-select").onchange = (e) => {
+  sendCmd("action=reset&impostors=" + e.target.value);
+};
+document.getElementById("speed").oninput = (e) => {
+  sendCmd("action=speed&ms=" + e.target.value);
+};
+document.getElementById("chk-vision").onchange = () => { if (latest) draw(latest); };
+document.getElementById("chk-reveal").onchange = () => { if (latest) renderUI(latest); };
+
+function draw(s) {
+  ctx.clearRect(0, 0, 1000, 600);
+  ctx.fillStyle = s.lights_out ? "#05070c" : "#0b111e";
+  ctx.fillRect(0, 0, 1000, 600);
+
+  // Hallway floor
+  ctx.fillStyle = s.lights_out ? "#0a0e17" : "#111a2b";
+  ctx.fillRect(40, 230, 920, 140);
+
+  // Rooms
+  for (const r of ROOMS) {
+    ctx.fillStyle = s.lights_out ? "#0d1320" : "#152033";
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.fillStyle = "rgba(148,163,184,0.22)";
+    ctx.font = "bold 14px system-ui";
+    ctx.fillText(r.name, r.x + 12, r.y + 22);
+  }
+
+  // Cafeteria meeting table
+  ctx.beginPath();
+  ctx.arc(500, 135, 28, 0, Math.PI * 2);
+  ctx.fillStyle = "#1e293b";
+  ctx.fill();
+  ctx.strokeStyle = "#475569";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Tasks
+  for (const [tx, ty] of TASKS) {
+    ctx.fillStyle = "#eab308";
+    ctx.fillRect(tx - 5, ty - 5, 10, 10);
+  }
+
+  // Vents
+  for (const [vx, vy] of VENTS) {
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(vx - 11, vy - 7, 22, 14);
+    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(vx - 11, vy - 7, 22, 14);
+  }
+
+  // Walls
+  ctx.strokeStyle = "#475569";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of WALLS) {
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+
+  const showVision = document.getElementById("chk-vision").checked;
+  const reveal = document.getElementById("chk-reveal").checked;
+
+  // Vision circles
+  if (showVision && s.phase === 0) {
+    for (const a of s.agents) {
+      if (!a.alive) continue;
+      const rad = a.role === 1 ? 215 : (s.lights_out ? 75 : 175);
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, rad, 0, Math.PI * 2);
+      ctx.fillStyle = (reveal && a.role === 1) ? "rgba(239,68,68,0.04)" : "rgba(56,189,248,0.03)";
+      ctx.fill();
+      ctx.strokeStyle = (reveal && a.role === 1) ? "rgba(239,68,68,0.18)" : "rgba(56,189,248,0.12)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+
+  // Dead bodies
+  for (const b of s.bodies) {
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(b.x - 10, b.y - 10); ctx.lineTo(b.x + 10, b.y + 10);
+    ctx.moveTo(b.x + 10, b.y - 10); ctx.lineTo(b.x - 10, b.y + 10);
+    ctx.stroke();
+  }
+
+  // Agents
+  for (const a of s.agents) {
+    if (!a.alive) continue;
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, 12, 0, Math.PI * 2);
+    ctx.fillStyle = a.color;
+    ctx.fill();
+    ctx.lineWidth = (reveal && a.role === 1) ? 3 : 2;
+    ctx.strokeStyle = (reveal && a.role === 1) ? "#ef4444" : "#0f172a";
+    ctx.stroke();
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "bold 11px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(a.name + (reveal && a.role === 1 ? " [IMP]" : ""), a.x, a.y - 17);
+  }
+  ctx.textAlign = "left";
+
+  if (s.phase === 1) {
+    ctx.fillStyle = "rgba(15, 23, 42, 0.45)";
+    ctx.fillRect(0, 0, 1000, 600);
+    ctx.fillStyle = "#fbbf24";
+    ctx.font = "bold 24px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("REUNIAO DE EMERGENCIA - DEBATE & VOTACAO", 500, 300);
+    ctx.textAlign = "left";
+  }
+}
+
+function renderUI(s) {
+  draw(s);
+  const reveal = document.getElementById("chk-reveal").checked;
+  document.getElementById("tick-pill").textContent = "Tick " + s.tick;
+  document.getElementById("btn-play").textContent = s.paused ? "Continuar" : "Pausar";
+
+  const pp = document.getElementById("phase-pill");
+  if (s.phase === 0) {
+    pp.textContent = s.lights_out ? "LUZES APAGADAS" : "ROAMING";
+    pp.className = s.lights_out ? "pill pill-warn" : "pill pill-ok";
+  } else if (s.phase === 1) {
+    pp.textContent = "REUNIAO (" + s.meeting_step + "/4)";
+    pp.className = "pill pill-warn";
+  } else if (s.phase === 2) {
+    pp.textContent = "TRIPULANTES VENCERAM";
+    pp.className = "pill pill-ok";
+  } else {
+    pp.textContent = "IMPOSTORES VENCERAM";
+    pp.className = "pill pill-danger";
+  }
+
+  const pct = s.tasks_total > 0 ? Math.round((s.tasks_done / s.tasks_total) * 100) : 0;
+  document.getElementById("task-fill").style.width = pct + "%";
+  document.getElementById("task-text").textContent = s.tasks_done + " / " + s.tasks_total;
+
+  const list = document.getElementById("agents-list");
+  list.innerHTML = s.agents.map(a => {
+    const susName = a.top_sus >= 0 ? s.agents[a.top_sus].name : "Ninguem";
+    const susPct = Math.round(a.top_sus_val * 100);
+    const roleTag = reveal
+      ? (a.role === 1 ? '<span class="role-imp">IMPOSTOR</span>' : '<span class="role-crew">Crew</span>')
+      : "";
+    const status = !a.alive ? (a.ejected ? "Ejetado" : "Eliminado") : ACT_NAMES[a.act];
+    return `<div class="agent-item ${a.alive ? "" : "dead"}">
+      <div class="agent-top">
+        <span><span class="dot" style="background:${a.color}"></span>${a.name}</span>
+        ${roleTag}
+      </div>
+      <div class="agent-sub">${PERS_NAMES[a.pers]} | ${status}</div>
+      <div class="agent-sub">${a.thought}</div>
+      <div class="agent-sub">Suspeita: <b>${susName}</b> (${susPct}%)</div>
+    </div>`;
+  }).join("");
+
+  const evCls = ["", "", "ev-kill", "ev-report", "ev-alibi", "ev-accuse", "", "ev-vote", "ev-eject", "ev-sabotage"];
+  const evList = document.getElementById("events-list");
+  evList.innerHTML = s.events.slice().reverse().map(e =>
+    `<div class="ev ${evCls[e.kind] || ""}"><span class="ev-tick">#${e.tick}</span>${e.text}</div>`
+  ).join("");
+}
+
+const es = new EventSource("/events");
+es.onmessage = (msg) => {
+  latest = JSON.parse(msg.data);
+  renderUI(latest);
+};
+</script>
+</body>
+</html>
