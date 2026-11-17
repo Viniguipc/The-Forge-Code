@@ -58,28 +58,57 @@ static void record_sighting(Agent *observer, int seen_id, int room_id, uint32_t 
 }
 
 static void set_agent_path_to(Agent *a, float tx, float ty) {
-    int start_wp = map_nearest_waypoint(a->x, a->y);
-    int target_room = map_room_at(tx, ty);
-    int goal_wp = (target_room >= 0) ? map_room_waypoint(target_room) : map_nearest_waypoint(tx, ty);
-    a->path_len = map_find_path(start_wp, goal_wp, a->path);
+    a->goal_x = tx;
+    a->goal_y = ty;
+    a->path_len = map_astar(a->x, a->y, tx, ty, a->path_x, a->path_y);
     a->path_idx = 0;
-    a->target_waypoint = goal_wp;
 }
 
 static void move_agent_toward(Agent *a, float tx, float ty, float speed) {
     float dx = tx - a->x;
     float dy = ty - a->y;
     float d = sqrtf(dx * dx + dy * dy);
+    float nx, ny;
     if (d <= speed) {
-        a->x = tx;
-        a->y = ty;
+        nx = tx;
+        ny = ty;
+    } else {
+        nx = a->x + (dx / d) * speed;
+        ny = a->y + (dy / d) * speed;
+    }
+    if (map_has_los(a->x, a->y, nx, ny)) {
+        a->vx = nx - a->x;
+        a->vy = ny - a->y;
+        a->x = nx;
+        a->y = ny;
+    } else if (map_has_los(a->x, a->y, nx, a->y)) {
+        a->vx = nx - a->x;
+        a->vy = 0;
+        a->x = nx;
+    } else if (map_has_los(a->x, a->y, a->x, ny)) {
+        a->vx = 0;
+        a->vy = ny - a->y;
+        a->y = ny;
+    } else {
         a->vx = 0;
         a->vy = 0;
-    } else {
-        a->vx = (dx / d) * speed;
-        a->vy = (dy / d) * speed;
-        a->x += a->vx;
-        a->y += a->vy;
+    }
+}
+
+static void follow_path_step(Agent *a, float speed) {
+    float rem = speed;
+    while (a->path_idx < a->path_len && rem > 0.5f) {
+        float wx = a->path_x[a->path_idx];
+        float wy = a->path_y[a->path_idx];
+        float d = map_dist(a->x, a->y, wx, wy);
+        if (d <= rem) {
+            move_agent_toward(a, wx, wy, d);
+            rem -= d;
+            a->path_idx++;
+        } else {
+            move_agent_toward(a, wx, wy, rem);
+            rem = 0.0f;
+        }
     }
 }
 
@@ -109,6 +138,11 @@ static void scatter_around_cafeteria(SimState *s) {
         a->current_room = 1;
         a->path_len = 0;
         a->path_idx = 0;
+        for (int j = 0; j < MAX_AGENTS; j++) {
+            a->last_seen_by_tick[j] = -100;
+            a->last_room_of[j] = -1;
+            a->follow_streak[j] = 0;
+        }
     }
 }
 
@@ -316,8 +350,10 @@ static void step_perception_and_suspicion(SimState *s) {
                 }
 
                 record_sighting(a, j, b_room, s->tick, b->activity);
-                a->last_seen_by_tick[j] = (int)s->tick;
-                if (b_room >= 0) a->last_room_of[j] = b_room;
+                if (b_room >= 0) {
+                    a->last_seen_by_tick[j] = (int)s->tick;
+                    a->last_room_of[j] = b_room;
+                }
             }
         }
 
@@ -377,7 +413,14 @@ static void step_agent_roaming(SimState *s, Agent *a) {
                 Agent *victim = &s->agents[best_target];
                 a->activity = ACT_HUNTING;
                 snprintf(a->last_thought, sizeof(a->last_thought), "Caçando %s", victim->name);
-                move_agent_toward(a, victim->x, victim->y, 13.5f);
+                if (map_has_los(a->x, a->y, victim->x, victim->y)) {
+                    move_agent_toward(a, victim->x, victim->y, 13.5f);
+                } else {
+                    if (a->path_len == 0 || map_dist(a->goal_x, a->goal_y, victim->x, victim->y) > 25.0f) {
+                        set_agent_path_to(a, victim->x, victim->y);
+                    }
+                    follow_path_step(a, 13.5f);
+                }
 
                 if (map_dist(a->x, a->y, victim->x, victim->y) <= 28.0f &&
                     count_witnesses(s, a->id, best_target, victim->x, victim->y) == 0) {
@@ -440,15 +483,15 @@ static void step_agent_roaming(SimState *s, Agent *a) {
     if (a->activity == ACT_FIXING_LIGHTS) {
         if (s->lights_sabotaged_timer == 0) {
             a->activity = ACT_WALKING;
-        } else if (a->path_idx < a->path_len) {
-            const Waypoint *wp = &MAP_WAYPOINTS[a->path[a->path_idx]];
-            move_agent_toward(a, wp->x, wp->y, 11.5f);
-            if (map_dist(a->x, a->y, wp->x, wp->y) < 6.0f) a->path_idx++;
+            const TaskPoint *cur_task = &MAP_TASKS[a->task_queue[a->task_idx]];
+            set_agent_path_to(a, cur_task->x, cur_task->y);
         } else {
-            move_agent_toward(a, MAP_TASKS[7].x, MAP_TASKS[7].y, 11.5f);
-            if (map_dist(a->x, a->y, MAP_TASKS[7].x, MAP_TASKS[7].y) < 12.0f) {
+            follow_path_step(a, 11.5f);
+            if (map_dist(a->x, a->y, MAP_TASKS[7].x, MAP_TASKS[7].y) < 14.0f) {
                 s->lights_sabotaged_timer = 0;
                 a->activity = ACT_WALKING;
+                const TaskPoint *cur_task = &MAP_TASKS[a->task_queue[a->task_idx]];
+                set_agent_path_to(a, cur_task->x, cur_task->y);
                 push_event(s, EVT_SYSTEM, a->id, -1, "%s religou as luzes na Eletrica!", a->name);
             }
         }
@@ -473,22 +516,26 @@ static void step_agent_roaming(SimState *s, Agent *a) {
         return;
     }
 
-    // Walking along waypoint path to current task
+    // Fleeing after kill
+    if (a->activity == ACT_FLEEING) {
+        follow_path_step(a, 12.5f);
+        if (a->path_idx >= a->path_len) {
+            a->activity = ACT_WALKING;
+        }
+        return;
+    }
+
+    // Walking along A* path to current task
     const TaskPoint *cur_task = &MAP_TASKS[a->task_queue[a->task_idx]];
-    if (a->path_idx < a->path_len) {
-        const Waypoint *wp = &MAP_WAYPOINTS[a->path[a->path_idx]];
-        move_agent_toward(a, wp->x, wp->y, 11.0f);
-        if (map_dist(a->x, a->y, wp->x, wp->y) < 8.0f) {
-            a->path_idx++;
-        }
-    } else {
-        move_agent_toward(a, cur_task->x, cur_task->y, 11.0f);
-        if (map_dist(a->x, a->y, cur_task->x, cur_task->y) < 12.0f) {
-            a->activity = (a->role == ROLE_IMPOSTOR) ? ACT_FAKE_TASK : ACT_DOING_TASK;
-            a->task_timer = rand_range(7, 12);
-            snprintf(a->last_thought, sizeof(a->last_thought),
-                     a->role == ROLE_IMPOSTOR ? "Fingindo task..." : "Fazendo %s", cur_task->name);
-        }
+    if (a->path_len == 0 || map_dist(a->goal_x, a->goal_y, cur_task->x, cur_task->y) > 5.0f) {
+        set_agent_path_to(a, cur_task->x, cur_task->y);
+    }
+    follow_path_step(a, 11.0f);
+    if (map_dist(a->x, a->y, cur_task->x, cur_task->y) < 14.0f) {
+        a->activity = (a->role == ROLE_IMPOSTOR) ? ACT_FAKE_TASK : ACT_DOING_TASK;
+        a->task_timer = rand_range(7, 12);
+        snprintf(a->last_thought, sizeof(a->last_thought),
+                 a->role == ROLE_IMPOSTOR ? "Fingindo task..." : "Fazendo %s", cur_task->name);
     }
 }
 

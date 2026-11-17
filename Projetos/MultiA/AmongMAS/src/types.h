@@ -6,7 +6,7 @@
 
 #define MAX_AGENTS 10
 #define MAX_ROOMS 6
-#define MAX_WAYPOINTS 20
+#define MAX_ASTAR_PATH 180
 #define MAX_WALLS 48
 #define MAX_TASKS 10
 #define MAX_VENTS 4
@@ -122,10 +122,11 @@ typedef struct {
     float x, y;
     float vx, vy;
     int current_room;
-    int target_waypoint;
-    int path[MAX_WAYPOINTS];
+    float path_x[MAX_ASTAR_PATH];
+    float path_y[MAX_ASTAR_PATH];
     int path_len;
     int path_idx;
+    float goal_x, goal_y;
 
     AgentActivity activity;
     int task_queue[MAX_TASKS_PER_AGENT];
