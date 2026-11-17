@@ -121,6 +121,9 @@ typedef struct {
     const char *symbol;
     AgentRole role;
     Personality personality;
+    float sus_mult;
+    float vote_offset;
+    float chaos_prob;
     bool alive;
     bool ejected;
 

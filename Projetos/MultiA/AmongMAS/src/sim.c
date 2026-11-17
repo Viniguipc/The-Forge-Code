@@ -11,59 +11,62 @@ typedef struct {
     const char *color;
     const char *symbol;
     Personality pers;
+    float sus_mult;     // multiplicador de ganho de suspeita
+    float vote_offset;  // ajuste no limiar de voto
+    float chaos_prob;   // chance de erro/brincadeira
 } AgentProfile;
 
 #define POOL_SIZE 40
 
 static const AgentProfile AGENT_POOL[POOL_SIZE] = {
-    // 5 Astutos
-    {"Vega",    "#38bdf8", "★", PERS_ASTUTO},
-    {"Kael",    "#818cf8", "◈", PERS_ASTUTO},
-    {"Nyx",     "#c084fc", "✦", PERS_ASTUTO},
-    {"Soren",   "#2dd4bf", "❖", PERS_ASTUTO},
-    {"Kira",    "#f43f5e", "✪", PERS_ASTUTO},
+    // 5 Astutos (cada um com um mix unico)
+    {"Vega",    "#38bdf8", "★", PERS_ASTUTO,     1.25f, -0.04f, 0.00f},
+    {"Kael",    "#818cf8", "◈", PERS_ASTUTO,     1.15f,  0.02f, 0.05f},
+    {"Nyx",     "#c084fc", "✦", PERS_ASTUTO,     1.30f, -0.06f, 0.02f},
+    {"Soren",   "#2dd4bf", "❖", PERS_ASTUTO,     1.10f,  0.05f, 0.00f},
+    {"Kira",    "#f43f5e", "✪", PERS_ASTUTO,     1.20f, -0.02f, 0.08f},
     // 5 Ceticos
-    {"Orion",   "#64748b", "■", PERS_CETICO},
-    {"Dante",   "#94a3b8", "▲", PERS_CETICO},
-    {"Otto",    "#475569", "◆", PERS_CETICO},
-    {"Boris",   "#78716c", "⬢", PERS_CETICO},
-    {"Iris",    "#0ea5e9", "◎", PERS_CETICO},
+    {"Orion",   "#64748b", "■", PERS_CETICO,     0.90f,  0.10f, 0.00f},
+    {"Dante",   "#94a3b8", "▲", PERS_CETICO,     1.05f,  0.05f, 0.02f},
+    {"Otto",    "#475569", "◆", PERS_CETICO,     0.85f,  0.14f, 0.00f},
+    {"Boris",   "#78716c", "⬢", PERS_CETICO,     0.95f,  0.08f, 0.04f},
+    {"Iris",    "#0ea5e9", "◎", PERS_CETICO,     1.10f,  0.03f, 0.00f},
     // 5 Burros
-    {"Pipoca",  "#fbbf24", "●", PERS_BURRO},
-    {"Bidu",    "#f59e0b", "◉", PERS_BURRO},
-    {"Caco",    "#a3e635", "◌", PERS_BURRO},
-    {"Guga",    "#fb923c", "△", PERS_BURRO},
-    {"Zeca",    "#eab308", "□", PERS_BURRO},
+    {"Pipoca",  "#fbbf24", "●", PERS_BURRO,      0.75f, -0.05f, 0.35f},
+    {"Bidu",    "#f59e0b", "◉", PERS_BURRO,      0.85f, -0.08f, 0.28f},
+    {"Caco",    "#a3e635", "◌", PERS_BURRO,      0.70f,  0.02f, 0.40f},
+    {"Guga",    "#fb923c", "△", PERS_BURRO,      0.90f, -0.04f, 0.22f},
+    {"Zeca",    "#eab308", "□", PERS_BURRO,      0.80f,  0.04f, 0.30f},
     // 5 Brincalhoes
-    {"Loki",    "#ec4899", "♠", PERS_BRINCALHAO},
-    {"Roxy",    "#f472b6", "♥", PERS_BRINCALHAO},
-    {"Tito",    "#e879f9", "♣", PERS_BRINCALHAO},
-    {"Lola",    "#fb7185", "♦", PERS_BRINCALHAO},
-    {"Pingo",   "#34d399", "☺", PERS_BRINCALHAO},
+    {"Loki",    "#ec4899", "♠", PERS_BRINCALHAO, 0.95f, -0.06f, 0.42f},
+    {"Roxy",    "#f472b6", "♥", PERS_BRINCALHAO, 1.05f, -0.03f, 0.30f},
+    {"Tito",    "#e879f9", "♣", PERS_BRINCALHAO, 0.90f, -0.08f, 0.38f},
+    {"Lola",    "#fb7185", "♦", PERS_BRINCALHAO, 1.10f,  0.00f, 0.25f},
+    {"Pingo",   "#34d399", "☺", PERS_BRINCALHAO, 1.00f, -0.05f, 0.34f},
     // 5 Paranoicos
-    {"Zed",     "#ef4444", "⚡", PERS_PARANOICO},
-    {"Ragnar",  "#dc2626", "✖", PERS_PARANOICO},
-    {"Igor",    "#f97316", "▲", PERS_PARANOICO},
-    {"Fenix",   "#ea580c", "✹", PERS_PARANOICO},
-    {"Tadeu",   "#e11d48", "✚", PERS_PARANOICO},
+    {"Zed",     "#ef4444", "⚡", PERS_PARANOICO,  1.40f, -0.10f, 0.10f},
+    {"Ragnar",  "#dc2626", "✖", PERS_PARANOICO,  1.30f, -0.08f, 0.05f},
+    {"Igor",    "#f97316", "▲", PERS_PARANOICO,  1.45f, -0.12f, 0.12f},
+    {"Fenix",   "#ea580c", "✹", PERS_PARANOICO,  1.25f, -0.05f, 0.04f},
+    {"Tadeu",   "#e11d48", "✚", PERS_PARANOICO,  1.35f, -0.09f, 0.08f},
     // 5 Analiticos
-    {"Atlas",   "#3b82f6", "⊕", PERS_ANALITICO},
-    {"Maya",    "#06b6d4", "✧", PERS_ANALITICO},
-    {"Juno",    "#22d3ee", "❄", PERS_ANALITICO},
-    {"Yuki",    "#60a5fa", "✳", PERS_ANALITICO},
-    {"Cleo",    "#a78bfa", "❂", PERS_ANALITICO},
+    {"Atlas",   "#3b82f6", "⊕", PERS_ANALITICO,  1.20f,  0.02f, 0.00f},
+    {"Maya",    "#06b6d4", "✧", PERS_ANALITICO,  1.15f, -0.02f, 0.02f},
+    {"Juno",    "#22d3ee", "❄", PERS_ANALITICO,  1.25f,  0.04f, 0.00f},
+    {"Yuki",    "#60a5fa", "✳", PERS_ANALITICO,  1.10f,  0.00f, 0.03f},
+    {"Cleo",    "#a78bfa", "❂", PERS_ANALITICO,  1.30f,  0.01f, 0.01f},
     // 5 Sociais
-    {"Luna",    "#10b981", "☀", PERS_SOCIAL},
-    {"Bia",     "#4ade80", "✿", PERS_SOCIAL},
-    {"Milo",    "#84cc16", "♪", PERS_SOCIAL},
-    {"Sol",     "#fde047", "☼", PERS_SOCIAL},
-    {"Vivi",    "#22c55e", "❀", PERS_SOCIAL},
+    {"Luna",    "#10b981", "☀", PERS_SOCIAL,     1.05f, -0.03f, 0.03f},
+    {"Bia",     "#4ade80", "✿", PERS_SOCIAL,     1.10f, -0.05f, 0.05f},
+    {"Milo",    "#84cc16", "♪", PERS_SOCIAL,     0.95f,  0.02f, 0.06f},
+    {"Sol",     "#fde047", "☼", PERS_SOCIAL,     1.15f, -0.04f, 0.02f},
+    {"Vivi",    "#22c55e", "❀", PERS_SOCIAL,     1.00f,  0.00f, 0.04f},
     // 5 Medrosos
-    {"Bento",   "#cbd5e1", "◐", PERS_MEDROSO},
-    {"Neko",    "#d8b4fe", "◑", PERS_MEDROSO},
-    {"Nora",    "#bae6fd", "◒", PERS_MEDROSO},
-    {"Teca",    "#fed7aa", "◓", PERS_MEDROSO},
-    {"Zara",    "#fbcfe8", "◔", PERS_MEDROSO}
+    {"Bento",   "#cbd5e1", "◐", PERS_MEDROSO,    1.15f,  0.06f, 0.05f},
+    {"Neko",    "#d8b4fe", "◑", PERS_MEDROSO,    1.20f,  0.08f, 0.08f},
+    {"Nora",    "#bae6fd", "◒", PERS_MEDROSO,    1.10f,  0.04f, 0.04f},
+    {"Teca",    "#fed7aa", "◓", PERS_MEDROSO,    1.25f,  0.10f, 0.10f},
+    {"Zara",    "#fbcfe8", "◔", PERS_MEDROSO,    1.05f,  0.02f, 0.03f}
 };
 
 static float clampf(float v, float lo, float hi) {
@@ -249,10 +252,13 @@ void sim_reset(SimState *s, int impostor_count) {
         a->symbol = prof->symbol;
         a->role = is_imp[i] ? ROLE_IMPOSTOR : ROLE_CREWMATE;
         a->personality = prof->pers;
+        a->sus_mult = prof->sus_mult;
+        a->vote_offset = prof->vote_offset;
+        a->chaos_prob = prof->chaos_prob;
         a->alive = true;
         a->ejected = false;
         a->activity = ACT_WALKING;
-        a->kill_cooldown = rand_range(16, 26);
+        a->kill_cooldown = rand_range(14 + impostor_count * 6, 22 + impostor_count * 8);
         a->vent_cooldown = 10;
         a->vote_target = -2;
         a->claimed_room = 1;
@@ -303,6 +309,18 @@ static int count_witnesses(const SimState *s, int killer_id, int victim_id, floa
         }
     }
     return count;
+}
+
+static void adjust_tasks_on_loss(SimState *s, const Agent *victim) {
+    if (victim->role == ROLE_CREWMATE) {
+        int rem = MAX_TASKS_PER_AGENT - victim->tasks_completed;
+        if (rem > 0) {
+            s->global_tasks_total -= rem;
+            if (s->global_tasks_total < s->global_tasks_done) {
+                s->global_tasks_total = s->global_tasks_done;
+            }
+        }
+    }
 }
 
 static void check_win_conditions(SimState *s) {
@@ -479,18 +497,19 @@ static void step_agent_roaming(SimState *s, Agent *a) {
                 a->activity = ACT_HUNTING;
                 snprintf(a->last_thought, sizeof(a->last_thought), "Caçando %s", victim->name);
                 if (map_has_los(a->x, a->y, victim->x, victim->y)) {
-                    move_agent_toward(a, victim->x, victim->y, 13.5f);
+                    move_agent_toward(a, victim->x, victim->y, 12.2f);
                 } else {
                     if (a->path_len == 0 || map_dist(a->goal_x, a->goal_y, victim->x, victim->y) > 25.0f) {
                         set_agent_path_to(a, victim->x, victim->y);
                     }
-                    follow_path_step(a, 13.5f);
+                    follow_path_step(a, 12.2f);
                 }
 
                 if (map_dist(a->x, a->y, victim->x, victim->y) <= 28.0f &&
                     count_witnesses(s, a->id, best_target, victim->x, victim->y) == 0) {
                     victim->alive = false;
                     victim->activity = ACT_DEAD;
+                    adjust_tasks_on_loss(s, victim);
                     int room = map_room_at(victim->x, victim->y);
                     if (s->body_count < MAX_BODIES) {
                         s->bodies[s->body_count++] = (DeadBody){
@@ -502,7 +521,7 @@ static void step_agent_roaming(SimState *s, Agent *a) {
                             .reported = false
                         };
                     }
-                    a->kill_cooldown = 30;
+                    a->kill_cooldown = 20 + s->impostor_count * 12;
                     a->activity = ACT_FLEEING;
                     snprintf(a->last_thought, sizeof(a->last_thought), "Eliminou %s!", victim->name);
                     push_event(s, EVT_KILL, a->id, victim->id,
@@ -610,26 +629,70 @@ static void step_meeting(SimState *s) {
     s->meeting_step++;
 
     if (s->meeting_step == 1) {
-        // Step 1: Broadcast alibis
+        // Step 1: Broadcast alibis + share sightings near body room
         for (int i = 0; i < MAX_AGENTS; i++) {
             Agent *a = &s->agents[i];
             if (!a->alive) continue;
             if (a->role == ROLE_IMPOSTOR) {
                 int fake_room = (s->meeting_body_room + 1 + (rand() % 4)) % MAX_ROOMS;
                 a->claimed_room = fake_room;
-            } else if (a->personality == PERS_BURRO && (rand() % 100) < 25) {
-                // Burro sometimes forgets and says the wrong room!
+            } else if ((float)(rand() % 100) / 100.0f < a->chaos_prob * 0.6f) {
                 a->claimed_room = rand() % MAX_ROOMS;
             }
             push_event(s, EVT_ALIBI, i, -1, "%s: Estava em %s.",
                        a->name,
                        a->claimed_room >= 0 ? MAP_ROOMS[a->claimed_room].name : "Corredor");
+
+            // Share sightings of anyone seen near the crime scene recently
+            if (a->role == ROLE_CREWMATE && s->meeting_body_room >= 0) {
+                for (int m = 0; m < MAX_MEMORY; m++) {
+                    const Sighting *sg = &a->memory[m];
+                    if (!sg->valid) continue;
+                    if (sg->room_id == s->meeting_body_room && s->tick - sg->tick <= 24 &&
+                        s->agents[sg->agent_id].alive) {
+                        int tgt = sg->agent_id;
+                        push_event(s, EVT_SIGHTING, i, tgt,
+                                   "%s: Vi %s perto de %s!",
+                                   a->name, s->agents[tgt].name,
+                                   MAP_ROOMS[s->meeting_body_room].name);
+                        for (int k = 0; k < MAX_AGENTS; k++) {
+                            if (k != tgt && s->agents[k].alive && s->agents[k].role == ROLE_CREWMATE) {
+                                s->agents[k].suspicion[tgt] = clampf(
+                                    s->agents[k].suspicion[tgt] + 0.16f * s->agents[k].sus_mult,
+                                    0.0f, 1.0f);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
         }
     } else if (s->meeting_step == 2) {
-        // Step 2: Cross-examine alibis vs memory & emit accusations
+        // Step 2: Cross-examine alibis vs memory, vouch & emit accusations
         for (int i = 0; i < MAX_AGENTS; i++) {
             Agent *a = &s->agents[i];
             if (!a->alive) continue;
+
+            // Vouch for someone seen doing a task recently
+            if (a->role == ROLE_CREWMATE) {
+                for (int m = 0; m < MAX_MEMORY; m++) {
+                    const Sighting *sg = &a->memory[m];
+                    if (!sg->valid) continue;
+                    if (sg->activity == ACT_DOING_TASK && s->tick - sg->tick <= 18 &&
+                        s->agents[sg->agent_id].alive && a->suspicion[sg->agent_id] < 0.3f) {
+                        int v = sg->agent_id;
+                        push_event(s, EVT_VOUCH, i, v,
+                                   "%s garante %s (fazendo task).", a->name, s->agents[v].name);
+                        for (int k = 0; k < MAX_AGENTS; k++) {
+                            if (s->agents[k].alive && s->agents[k].role == ROLE_CREWMATE) {
+                                s->agents[k].suspicion[v] = clampf(
+                                    s->agents[k].suspicion[v] - 0.10f, 0.0f, 1.0f);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
 
             // Check contradictions
             for (int j = 0; j < MAX_AGENTS; j++) {
@@ -638,8 +701,7 @@ static void step_meeting(SimState *s) {
 
                 if (a->last_room_of[j] >= 0 && (int)s->tick - a->last_seen_by_tick[j] <= 22 &&
                     a->last_room_of[j] != s->agents[j].claimed_room && a->role == ROLE_CREWMATE) {
-                    float boost = (a->personality == PERS_ASTUTO || a->personality == PERS_ANALITICO) ? 0.42f :
-                                  (a->personality == PERS_BURRO) ? 0.15f : 0.30f;
+                    float boost = 0.30f * a->sus_mult;
                     a->suspicion[j] = clampf(a->suspicion[j] + boost, 0.0f, 1.0f);
                     push_event(s, EVT_ACCUSE, i, j,
                                "%s: Contradicao! Vi %s em %s, nao em %s!",
@@ -650,8 +712,8 @@ static void step_meeting(SimState *s) {
                 }
             }
 
-            // Brincalhao sometimes makes a chaotic joke accusation
-            if (a->personality == PERS_BRINCALHAO && (rand() % 100) < 35) {
+            // Chaos/joke accusation based on individual chaos_prob
+            if (a->personality == PERS_BRINCALHAO && ((float)(rand() % 100) / 100.0f) < a->chaos_prob) {
                 int rnd = rand() % MAX_AGENTS;
                 if (rnd != i && s->agents[rnd].alive) {
                     push_event(s, EVT_ACCUSE, i, rnd,
@@ -671,8 +733,7 @@ static void step_meeting(SimState *s) {
                     top = j;
                 }
             }
-            float acc_thresh = (a->personality == PERS_CETICO) ? 0.58f :
-                               (a->personality == PERS_PARANOICO) ? 0.30f : 0.42f;
+            float acc_thresh = clampf(0.40f + a->vote_offset, 0.22f, 0.72f);
             if (top >= 0 && top_s >= acc_thresh) {
                 push_event(s, EVT_ACCUSE, i, top,
                            "%s acusa %s (suspeita %.0f%%).",
@@ -682,7 +743,7 @@ static void step_meeting(SimState *s) {
                 for (int k = 0; k < MAX_AGENTS; k++) {
                     if (k != i && k != top && s->agents[k].alive && s->agents[k].role == ROLE_CREWMATE) {
                         s->agents[k].suspicion[top] = clampf(
-                            s->agents[k].suspicion[top] + inf, 0.0f, 1.0f);
+                            s->agents[k].suspicion[top] + inf * s->agents[k].sus_mult, 0.0f, 1.0f);
                     }
                 }
             }
@@ -693,11 +754,7 @@ static void step_meeting(SimState *s) {
             Agent *a = &s->agents[i];
             if (!a->alive) continue;
 
-            float thresh = 0.45f;
-            if (a->personality == PERS_PARANOICO) thresh = 0.28f;
-            else if (a->personality == PERS_CETICO) thresh = 0.65f;
-            else if (a->personality == PERS_MEDROSO) thresh = 0.52f;
-            else if (a->personality == PERS_ASTUTO) thresh = 0.40f;
+            float thresh = clampf(0.42f + a->vote_offset, 0.25f, 0.75f);
 
             int best = -1;
             float best_s = thresh;
@@ -710,10 +767,9 @@ static void step_meeting(SimState *s) {
                 }
             }
 
-            // Burro / Brincalhao sometimes vote randomly if undecided
+            // Chaos vote if undecided
             if (best == -1 && a->role == ROLE_CREWMATE &&
-                (a->personality == PERS_BURRO || a->personality == PERS_BRINCALHAO) &&
-                (rand() % 100) < 30) {
+                ((float)(rand() % 100) / 100.0f) < a->chaos_prob * 0.7f) {
                 for (int tries = 0; tries < 6; tries++) {
                     int c = rand() % MAX_AGENTS;
                     if (c != i && s->agents[c].alive) {
@@ -769,6 +825,7 @@ static void step_meeting(SimState *s) {
             s->agents[ejected].alive = false;
             s->agents[ejected].ejected = true;
             s->agents[ejected].activity = ACT_DEAD;
+            adjust_tasks_on_loss(s, &s->agents[ejected]);
             push_event(s, EVT_EJECT, -1, ejected,
                        "%s foi EJETADO (%d votos). Era %s!",
                        s->agents[ejected].name, max_v,
@@ -787,7 +844,7 @@ static void step_meeting(SimState *s) {
             const TaskPoint *tp = &MAP_TASKS[a->task_queue[a->task_idx]];
             set_agent_path_to(a, tp->x, tp->y);
             a->activity = ACT_WALKING;
-            if (a->role == ROLE_IMPOSTOR) a->kill_cooldown = 18;
+            if (a->role == ROLE_IMPOSTOR) a->kill_cooldown = 14 + s->impostor_count * 7;
         }
 
         s->phase = PHASE_ROAMING;
