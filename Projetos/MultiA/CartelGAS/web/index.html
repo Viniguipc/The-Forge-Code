@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CartelGAS — Rinha de Cartel & Guerra de Preços (Rust MAS)</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="logo">⛽</span>
+          <div>
+            <h1>CartelGAS <span class="sub">Sistema Multi-Agente (JADE-inspired Rust)</span></h1>
+            <p class="subtitle">5 Postos Autônomos • 20 Motoristas na Reserva • FIPA-ACL + Directory Facilitator</p>
+          </div>
+        </div>
+
+        <div class="status-pills">
+          <span id="conn-badge" class="pill pill-warn">Conectando...</span>
+          <span id="day-badge" class="pill pill-day">☀️ Dia</span>
+          <span id="regime-badge" class="pill pill-free">Mercado Livre</span>
+          <span id="tick-badge" class="pill pill-mono">Tick: 0</span>
+        </div>
+
+        <div class="controls">
+          <button id="btn-play-pause" class="btn btn-primary">⏸ Pausar</button>
+          <button id="btn-step" class="btn">+1 Tick</button>
+          <label class="speed-label">
+            Velocidade
+            <input id="speed-range" type="range" min="80" max="1200" step="40" value="450" />
+          </label>
+          <button id="btn-crisis" class="btn btn-danger" title="Causa crise de caixa em um membro do cartel para forçar traição">💥 Crise de Caixa</button>
+          <button id="btn-reset" class="btn">↻ Reiniciar</button>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="panel avenue-panel">
+          <div class="panel-header">
+            <h2>🛣️ Avenida Principal — Visão em Tempo Real</h2>
+            <div class="legend">
+              <span><i class="dot" style="background:#22c55e"></i>Tanque OK</span>
+              <span><i class="dot" style="background:#ef4444"></i>Na Reserva (buscando DF)</span>
+              <span><i class="dot" style="background:#a855f7"></i>Msg Cartel (PROPOSE/ACCEPT)</span>
+              <span><i class="dot" style="background:#f43f5e"></i>Alerta de Traição</span>
+            </div>
+          </div>
+          <canvas id="avenue-canvas" width="1200" height="320"></canvas>
+        </section>
+
+        <section class="stations-row" id="stations-row"></section>
+
+        <section class="panel charts-panel">
+          <div class="panel-header">
+            <h2>📈 Histórico de Preços (R$/L) & Caixa dos Postos (R$)</h2>
+          </div>
+          <div class="charts-grid">
+            <div class="chart-box">
+              <div class="chart-title">Preço na Bomba (R$/L)</div>
+              <canvas id="price-chart" width="580" height="190"></canvas>
+            </div>
+            <div class="chart-box">
+              <div class="chart-title">Reserva de Caixa (R$)</div>
+              <canvas id="cash-chart" width="580" height="190"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section class="bottom-grid">
+          <section class="panel df-panel">
+            <div class="panel-header">
+              <h2>📒 Directory Facilitator (Páginas Amarelas)</h2>
+              <span class="badge-count" id="df-count">0 serviços</span>
+            </div>
+            <table class="df-table">
+              <thead>
+                <tr>
+                  <th>Agente</th>
+                  <th>Serviço</th>
+                  <th>Preço</th>
+                  <th>Estoque</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="df-tbody"></tbody>
+            </table>
+          </section>
+
+          <section class="panel acl-panel">
+            <div class="panel-header">
+              <h2>💬 Inspetor FIPA-ACL (Mensagens entre Agentes)</h2>
+              <div class="tabs" id="acl-tabs">
+                <button class="tab active" data-filter="all">Todas</button>
+                <button class="tab" data-filter="cartel">🤝 Cartel / Privadas</button>
+                <button class="tab" data-filter="df">📒 Páginas Amarelas</button>
+                <button class="tab" data-filter="fuel">⛽ Abastecimento</button>
+              </div>
+            </div>
+            <div id="acl-log" class="acl-log"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

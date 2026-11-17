@@ -1,0 +1,15 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Node / Vite frontend
+web/node_modules/
+web/dist/
+.vite/
+
+# Environment & local files
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
