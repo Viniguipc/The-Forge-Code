@@ -1,0 +1,16 @@
+[package]
+name = "vhdl_sim_viewer"
+version = "0.1.0"
+edition = "2024"
+authors = ["Safe Rust VHDL Engine"]
+description = "A Safe Rust VHDL compiler, discrete-event simulator, and waveform viewer"
+
+[dependencies]
+
+[[bin]]
+name = "vhdl_sim"
+path = "src/main.rs"
+
+[lib]
+name = "vhdl_sim_viewer"
+path = "src/lib.rs"
