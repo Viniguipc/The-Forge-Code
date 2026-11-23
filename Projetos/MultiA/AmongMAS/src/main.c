@@ -216,6 +216,15 @@ int main(void) {
             const char *ok = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK";
             send(client, ok, (int)strlen(ok), 0);
             closesocket(client);
+        } else if (strncmp(url, "/assets/", 8) == 0 && strstr(url, "..") == NULL) {
+            char fpath[512];
+            snprintf(fpath, sizeof(fpath), "web%s", url);
+            const char *ctype = "application/octet-stream";
+            if (strstr(url, ".png")) ctype = "image/png";
+            else if (strstr(url, ".jpg")) ctype = "image/jpeg";
+            else if (strstr(url, ".svg")) ctype = "image/svg+xml";
+            send_http_file(client, fpath, ctype);
+            closesocket(client);
         } else {
             send_http_file(client, "web/index.html", "text/html");
             closesocket(client);

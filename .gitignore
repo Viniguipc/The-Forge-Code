@@ -67,3 +67,13 @@ dist/
 .env.local
 .env.*.local
 
+# Generated local game assets
+**/web/assets/
+
+# Academic reports, presentations & sandbox temp
+**/docs/
+*.pptx
+*.pdf
+sandbox_tmp/
+
+

@@ -20,48 +20,71 @@
 
 typedef enum {
     ROLE_CREWMATE = 0,
-    ROLE_IMPOSTOR = 1
+    ROLE_IMPOSTOR = 1,
+    ROLE_NEUTRAL  = 2
 } AgentRole;
 
 typedef enum {
-    PERS_ASTUTO     = 0, // Alta deducao e melhor impostor
-    PERS_CETICO     = 1, // Exige alta evidencia para votar
-    PERS_BURRO      = 2, // Confunde alibis e se distrai
-    PERS_BRINCALHAO = 3, // Faz acusacoes aleatorias e causa caos
-    PERS_PARANOICO  = 4, // Suspeita rapido de qualquer aproximacao
-    PERS_ANALITICO  = 5, // Foca em fake tasks e contradicoes
-    PERS_SOCIAL     = 6, // Influencia votos e confia em alibis
-    PERS_MEDROSO    = 7  // Prioriza religar luzes e evita risco
+    SROLE_NONE = 0,
+    // Crewmate special roles (1..6)
+    SROLE_DOCTOR       = 1,
+    SROLE_INVESTIGATOR = 2,
+    SROLE_WATCHER      = 3,
+    SROLE_ENGINEER     = 4,
+    SROLE_TRACKER      = 5,
+    SROLE_MAYOR        = 6,
+    // Impostor special roles (7..11)
+    SROLE_SHAPESHIFTER = 7,
+    SROLE_JANITOR      = 8,
+    SROLE_SABOTEUR     = 9,
+    SROLE_SILENCER     = 10,
+    SROLE_INFILTRATOR  = 11,
+    // Neutral (12)
+    SROLE_JESTER       = 12
+} SpecialRole;
+
+typedef enum {
+    PERS_ASTUTO     = 0,
+    PERS_CETICO     = 1,
+    PERS_BURRO      = 2,
+    PERS_BRINCALHAO = 3,
+    PERS_PARANOICO  = 4,
+    PERS_ANALITICO  = 5,
+    PERS_SOCIAL     = 6,
+    PERS_MEDROSO    = 7
 } Personality;
 
 typedef enum {
-    ACT_WALKING = 0,
-    ACT_DOING_TASK = 1,
-    ACT_FAKE_TASK = 2,
-    ACT_HUNTING = 3,
-    ACT_FLEEING = 4,
+    ACT_WALKING       = 0,
+    ACT_DOING_TASK    = 1,
+    ACT_FAKE_TASK     = 2,
+    ACT_HUNTING       = 3,
+    ACT_FLEEING       = 4,
     ACT_FIXING_LIGHTS = 5,
-    ACT_DEAD = 6
+    ACT_WATCHING_CAMS = 6,
+    ACT_DEAD          = 7
 } AgentActivity;
 
 typedef enum {
-    PHASE_ROAMING = 0,
-    PHASE_MEETING = 1,
-    PHASE_CREW_WIN = 2,
-    PHASE_IMPOSTOR_WIN = 3
+    PHASE_ROAMING      = 0,
+    PHASE_MEETING      = 1,
+    PHASE_CREW_WIN     = 2,
+    PHASE_IMPOSTOR_WIN = 3,
+    PHASE_JESTER_WIN   = 4
 } GamePhase;
 
 typedef enum {
-    EVT_SYSTEM = 0,
+    EVT_SYSTEM   = 0,
     EVT_SIGHTING = 1,
-    EVT_KILL = 2,
-    EVT_REPORT = 3,
-    EVT_ALIBI = 4,
-    EVT_ACCUSE = 5,
-    EVT_VOUCH = 6,
-    EVT_VOTE = 7,
-    EVT_EJECT = 8,
-    EVT_SABOTAGE = 9
+    EVT_KILL     = 2,
+    EVT_REPORT   = 3,
+    EVT_ALIBI    = 4,
+    EVT_ACCUSE   = 5,
+    EVT_VOUCH    = 6,
+    EVT_VOTE     = 7,
+    EVT_EJECT    = 8,
+    EVT_SABOTAGE = 9,
+    EVT_ROLE     = 10
 } EventKind;
 
 typedef struct {
@@ -109,8 +132,8 @@ typedef struct {
     uint32_t id;
     uint32_t tick;
     EventKind kind;
-    int sender_id;   // -1 = System
-    int target_id;   // -1 = All
+    int sender_id;
+    int target_id;
     char text[160];
 } AclEvent;
 
@@ -120,6 +143,7 @@ typedef struct {
     const char *color;
     const char *symbol;
     AgentRole role;
+    SpecialRole srole;
     Personality personality;
     float sus_mult;
     float vote_offset;
@@ -144,11 +168,26 @@ typedef struct {
 
     int kill_cooldown;
     int vent_cooldown;
+    int ability_cooldown;
+
+    // Special role states
+    int protected_by;      // agent_id of doctor protecting this agent, or -1
+    int protect_timer;
+    int tracked_target;    // tracker's target
+    int track_timer;
+    int disguise_id;       // shapeshifter's copied agent_id, or -1
+    int disguise_timer;
+    bool silenced;         // silenced for next meeting
+    int watch_timer;       // security watcher timer
+    int inv_target;        // investigator proximity target
+    int inv_ticks;         // ticks spent near inv_target
+    bool role_revealed;
+
     int last_seen_by_tick[MAX_AGENTS];
     int follow_streak[MAX_AGENTS];
     int last_room_of[MAX_AGENTS];
 
-    float suspicion[MAX_AGENTS]; // 0.0 .. 1.0
+    float suspicion[MAX_AGENTS];
     Sighting memory[MAX_MEMORY];
     int memory_head;
 
@@ -171,6 +210,9 @@ typedef struct {
 
     int lights_sabotaged_timer;
     int sabotage_cooldown;
+    int locked_room;
+    int locked_timer;
+
     int global_tasks_done;
     int global_tasks_total;
     int prev_global_tasks_done;

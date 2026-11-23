@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>AmongMAS — Multiagente Espacial (C11)</title>
+<title>OrbitalMAS — Estação Multiagente (C11)</title>
 <style>
   :root {
     --bg: #0b0f17;
@@ -183,7 +183,7 @@
 <body>
 <header>
   <div class="brand">
-    <span>AmongMAS</span>
+    <span>OrbitalMAS</span>
     <span class="pill">C11 + SSE</span>
     <span id="phase-pill" class="pill pill-ok">ROAMING</span>
     <span id="tick-pill" class="pill">Tick 0</span>
@@ -255,11 +255,40 @@ const WALLS = [
   [730,560,960,560],[730,370,730,560],[960,370,960,560],[730,370,815,370],[875,370,960,370]
 ];
 const PERS_NAMES = ["Astuto", "Cetico", "Burro", "Brincalhao", "Paranoico", "Analitico", "Social", "Medroso"];
-const ACT_NAMES = ["Andando", "Fazendo Task", "Fingindo Task", "Cacando!", "Fugindo!", "Religando Luz", "Morto"];
+const ACT_NAMES = ["Andando", "Fazendo Task", "Fingindo Task", "Cacando!", "Fugindo!", "Religando Luz", "Cameras", "Morto"];
+const DOOR_LINES = [
+  [125,230,185,230],[470,230,530,230],[815,230,875,230],
+  [125,370,185,370],[470,370,530,370],[815,370,875,370]
+];
 
 const canvas = document.getElementById("map");
 const ctx = canvas.getContext("2d");
 let latest = null;
+
+// Load PNG assets
+const imgFloor = new Image(); imgFloor.src = "/assets/floor_tile.png";
+const imgVent  = new Image(); imgVent.src  = "/assets/vent_hatch.png";
+const imgTask  = new Image(); imgTask.src  = "/assets/task_terminal.png";
+const imgAgent = new Image(); imgAgent.src = "/assets/agent_base.png";
+let floorPattern = null;
+imgFloor.onload = () => { floorPattern = ctx.createPattern(imgFloor, "repeat"); };
+
+const tintedCache = {};
+function getTintedAgent(color) {
+  if (!imgAgent.complete || imgAgent.naturalWidth === 0) return null;
+  if (tintedCache[color]) return tintedCache[color];
+  const off = document.createElement("canvas");
+  off.width = 34; off.height = 34;
+  const octx = off.getContext("2d");
+  octx.drawImage(imgAgent, 0, 0, 34, 34);
+  octx.globalCompositeOperation = "multiply";
+  octx.fillStyle = color;
+  octx.fillRect(0, 0, 34, 34);
+  octx.globalCompositeOperation = "destination-in";
+  octx.drawImage(imgAgent, 0, 0, 34, 34);
+  tintedCache[color] = off;
+  return off;
+}
 
 function sendCmd(qs) {
   fetch("/cmd?" + qs, { method: "POST" }).catch(() => {});
@@ -290,14 +319,16 @@ function draw(s) {
   ctx.fillRect(0, 0, 1000, 600);
 
   // Hallway floor
-  ctx.fillStyle = s.lights_out ? "#0a0e17" : "#111a2b";
+  ctx.fillStyle = (floorPattern && !s.lights_out) ? floorPattern : (s.lights_out ? "#0a0e17" : "#111a2b");
   ctx.fillRect(40, 230, 920, 140);
 
   // Rooms
   for (const r of ROOMS) {
-    ctx.fillStyle = s.lights_out ? "#0d1320" : "#152033";
+    ctx.fillStyle = (floorPattern && !s.lights_out) ? floorPattern : (s.lights_out ? "#0d1320" : "#152033");
     ctx.fillRect(r.x, r.y, r.w, r.h);
-    ctx.fillStyle = "rgba(148,163,184,0.22)";
+    ctx.fillStyle = "rgba(15, 23, 42, 0.35)";
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.fillStyle = "rgba(226,232,240,0.38)";
     ctx.font = "bold 14px system-ui";
     ctx.fillText(r.name, r.x + 12, r.y + 22);
   }
@@ -313,17 +344,25 @@ function draw(s) {
 
   // Tasks
   for (const [tx, ty] of TASKS) {
-    ctx.fillStyle = "#eab308";
-    ctx.fillRect(tx - 5, ty - 5, 10, 10);
+    if (imgTask.complete && imgTask.naturalWidth > 0) {
+      ctx.drawImage(imgTask, tx - 11, ty - 11, 22, 22);
+    } else {
+      ctx.fillStyle = "#eab308";
+      ctx.fillRect(tx - 5, ty - 5, 10, 10);
+    }
   }
 
   // Vents
   for (const [vx, vy] of VENTS) {
-    ctx.fillStyle = "#334155";
-    ctx.fillRect(vx - 11, vy - 7, 22, 14);
-    ctx.strokeStyle = "#64748b";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(vx - 11, vy - 7, 22, 14);
+    if (imgVent.complete && imgVent.naturalWidth > 0) {
+      ctx.drawImage(imgVent, vx - 13, vy - 13, 26, 26);
+    } else {
+      ctx.fillStyle = "#334155";
+      ctx.fillRect(vx - 11, vy - 7, 22, 14);
+      ctx.strokeStyle = "#64748b";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(vx - 11, vy - 7, 22, 14);
+    }
   }
 
   // Walls
@@ -335,6 +374,17 @@ function draw(s) {
     ctx.lineTo(x2, y2);
   }
   ctx.stroke();
+
+  // Locked door
+  if (s.locked_room >= 0 && DOOR_LINES[s.locked_room]) {
+    const [dx1, dy1, dx2, dy2] = DOOR_LINES[s.locked_room];
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(dx1, dy1);
+    ctx.lineTo(dx2, dy2);
+    ctx.stroke();
+  }
 
   const showVision = document.getElementById("chk-vision").checked;
   const reveal = document.getElementById("chk-reveal").checked;
@@ -367,24 +417,33 @@ function draw(s) {
   // Agents
   for (const a of s.agents) {
     if (!a.alive) continue;
-    ctx.beginPath();
-    ctx.arc(a.x, a.y, 13, 0, Math.PI * 2);
-    ctx.fillStyle = a.color;
-    ctx.fill();
-    ctx.lineWidth = (reveal && a.role === 1) ? 3 : 2;
-    ctx.strokeStyle = (reveal && a.role === 1) ? "#ef4444" : "#0f172a";
-    ctx.stroke();
-
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 12px system-ui";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(a.sym || "●", a.x, a.y + 0.5);
-    ctx.textBaseline = "alphabetic";
+    const shown = (!reveal && a.disguise >= 0 && s.agents[a.disguise]) ? s.agents[a.disguise] : a;
+    const sprite = getTintedAgent(shown.color);
+    if (sprite) {
+      if (reveal && (a.role === 1 || a.role === 2)) {
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, 17, 0, Math.PI * 2);
+        ctx.strokeStyle = a.role === 1 ? "#ef4444" : "#f59e0b";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.drawImage(sprite, a.x - 17, a.y - 17, 34, 34);
+    } else {
+      ctx.beginPath();
+      ctx.arc(a.x, a.y, 13, 0, Math.PI * 2);
+      ctx.fillStyle = shown.color;
+      ctx.fill();
+      ctx.lineWidth = (reveal && a.role === 1) ? 3 : 2;
+      ctx.strokeStyle = (reveal && a.role === 1) ? "#ef4444" : (reveal && a.role === 2 ? "#f59e0b" : "#0f172a");
+      ctx.stroke();
+    }
 
     ctx.fillStyle = "#f8fafc";
     ctx.font = "bold 11px system-ui";
-    ctx.fillText(a.name + (reveal && a.role === 1 ? " [IMP]" : ""), a.x, a.y - 18);
+    ctx.textAlign = "center";
+    const tag = reveal ? (a.role === 1 ? " [IMP]" : (a.role === 2 ? " [BOBO]" : "")) : "";
+    const disq = (reveal && a.disguise >= 0 && s.agents[a.disguise]) ? ` (${s.agents[a.disguise].name})` : "";
+    ctx.fillText(`${shown.sym || ""} ${a.name}${tag}${disq}`, a.x, a.y - 20);
   }
   ctx.textAlign = "left";
 
@@ -415,6 +474,9 @@ function renderUI(s) {
   } else if (s.phase === 2) {
     pp.textContent = "TRIPULANTES VENCERAM";
     pp.className = "pill pill-ok";
+  } else if (s.phase === 4) {
+    pp.textContent = "BOBO VENCEU!";
+    pp.className = "pill pill-warn";
   } else {
     pp.textContent = "IMPOSTORES VENCERAM";
     pp.className = "pill pill-danger";
@@ -429,9 +491,13 @@ function renderUI(s) {
     const susName = a.top_sus >= 0 ? s.agents[a.top_sus].name : "Ninguem";
     const susPct = Math.round(a.top_sus_val * 100);
     const roleTag = reveal
-      ? (a.role === 1 ? '<span class="role-imp">IMPOSTOR</span>' : '<span class="role-crew">Crew</span>')
+      ? (a.role === 1
+          ? `<span class="role-imp">IMP${a.srole > 0 ? "·" + a.srole_name : ""}</span>`
+          : (a.role === 2
+              ? `<span style="color:#fbbf24;font-size:10px;">BOBO</span>`
+              : `<span class="role-crew">${a.srole > 0 ? a.srole_name : "Crew"}</span>`))
       : "";
-    const status = !a.alive ? (a.ejected ? "Ejetado" : "Eliminado") : ACT_NAMES[a.act];
+    const status = !a.alive ? (a.ejected ? "Ejetado" : "Eliminado") : (ACT_NAMES[a.act] || "Ativo");
     return `<div class="agent-item ${a.alive ? "" : "dead"}">
       <div class="agent-top">
         <span><span class="dot" style="background:${a.color}"></span>${a.sym || ""} ${a.name}</span>
@@ -443,7 +509,7 @@ function renderUI(s) {
     </div>`;
   }).join("");
 
-  const evCls = ["", "", "ev-kill", "ev-report", "ev-alibi", "ev-accuse", "", "ev-vote", "ev-eject", "ev-sabotage"];
+  const evCls = ["", "", "ev-kill", "ev-report", "ev-alibi", "ev-accuse", "", "ev-vote", "ev-eject", "ev-sabotage", "ev-alibi"];
   const evList = document.getElementById("events-list");
   evList.innerHTML = s.events.slice().reverse().map(e =>
     `<div class="ev ${evCls[e.kind] || ""}"><span class="ev-tick">#${e.tick}</span>${e.text}</div>`

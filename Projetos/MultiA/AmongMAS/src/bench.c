@@ -13,6 +13,7 @@ static void run_batch(int impostor_count, int num_games) {
     int crew_win_eject = 0;
     int crew_win_tasks = 0;
     int imp_win = 0;
+    int jester_win = 0;
     int timeouts = 0;
 
     long long total_ticks = 0;
@@ -58,10 +59,12 @@ static void run_batch(int impostor_count, int num_games) {
 
         bool crew_won = (s.phase == PHASE_CREW_WIN);
         if (s.phase == PHASE_CREW_WIN) {
-            if (s.global_tasks_done >= s.global_tasks_total) crew_win_tasks++;
+            if (s.global_tasks_total > 0 && s.global_tasks_done >= s.global_tasks_total) crew_win_tasks++;
             else crew_win_eject++;
         } else if (s.phase == PHASE_IMPOSTOR_WIN) {
             imp_win++;
+        } else if (s.phase == PHASE_JESTER_WIN) {
+            jester_win++;
         }
 
         for (int i = 0; i < MAX_AGENTS; i++) {
@@ -83,6 +86,8 @@ static void run_batch(int impostor_count, int num_games) {
            crew_total, 100.0 * crew_total / num_games, crew_win_eject, crew_win_tasks);
     printf("Vitoria Impostores : %d (%.1f%%)\n",
            imp_win, 100.0 * imp_win / num_games);
+    printf("Vitoria Bobo       : %d (%.1f%%)\n",
+           jester_win, 100.0 * jester_win / num_games);
     if (timeouts > 0) printf("Timeouts           : %d\n", timeouts);
     printf("Media ticks/partida: %.1f | Reunioes: %.2f | Kills: %.2f\n",
            (double)total_ticks / num_games,

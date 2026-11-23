@@ -1,0 +1,6 @@
+.env
+*.exe
+sandbox_tmp/
+docs/
+*.pptx
+*.pdf

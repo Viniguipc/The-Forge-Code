@@ -1,0 +1,9 @@
+# Assets gerados localmente (nao subir para o git)
+web/assets/
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# Binarios
+*.exe

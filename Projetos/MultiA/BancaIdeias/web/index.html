@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>BancaIdeias — Debate Multiagente (C++20 + Gemini)</title>
+<style>
+  :root {
+    --bg: #0b0f17;
+    --panel: #131a26;
+    --border: #233044;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .brand { font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+  .pill {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #1e293b;
+    border: 1px solid var(--border);
+  }
+  .pill-ok { background: #064e3b; color: #6ee7b7; border-color: #059669; }
+  .pill-warn { background: #78350f; color: #fcd34d; border-color: #d97706; }
+  .pill-err { background: #7f1d1d; color: #fca5a5; border-color: #dc2626; }
+  .container {
+    max-width: 1050px;
+    width: 100%;
+    margin: 18px auto;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 92px;
+    background: #0b111e;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .opts { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  label { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  select, button {
+    background: #1e293b;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 7px 12px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary { background: #0284c7; border-color: #0ea5e9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .roster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+  }
+  .member {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-top: 3px solid #475569;
+  }
+  .member-name { font-weight: 700; font-size: 13px; }
+  .member-role { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .turns { display: flex; flex-direction: column; gap: 12px; }
+  .turn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid #38bdf8;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .turn-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .turn-author { font-weight: 700; font-size: 14px; }
+  .turn-meta { color: var(--muted); font-size: 11px; }
+  .turn-body {
+    white-space: pre-wrap;
+    line-height: 1.55;
+    color: #e2e8f0;
+  }
+  .judge-turn {
+    background: #1a160c;
+    border-color: #78350f;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span>BancaIdeias</span>
+    <span class="pill">C++20 + WinHTTP + SSE</span>
+    <span id="key-pill" class="pill">Verificando chave...</span>
+  </div>
+  <span id="status-pill" class="pill">Pronto</span>
+</header>
+
+<div class="container">
+  <div id="roster" class="roster"></div>
+
+  <div class="card">
+    <textarea id="idea" placeholder="Descreva sua ideia aqui (a banca vai tratá-la como anônima para evitar bajulação)..."></textarea>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <label style="cursor:pointer;background:#0f172a;border:1px dashed #334155;padding:5px 10px;border-radius:6px;color:#cbd5e1;">
+        📎 Anexar arquivos (RAG leve: .txt, .md, código)
+        <input id="file-input" type="file" multiple accept=".txt,.md,.c,.cpp,.h,.hpp,.py,.js,.ts,.json,.csv,.html,.css" style="display:none;">
+      </label>
+      <div id="file-pills" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+    <div class="row">
+      <div class="opts">
+        <label>Modo da Banca:
+          <select id="mode">
+            <option value="ideias" selected>Avaliação de Ideias</option>
+            <option value="codigo_criacao">Criação de Código</option>
+            <option value="codigo_avaliacao">Avaliação de Código</option>
+            <option value="texto_criacao">Criação Literária</option>
+            <option value="texto_avaliacao">Avaliação Literária</option>
+          </select>
+        </label>
+        <label>Rodadas:
+          <select id="rounds">
+            <option value="1" selected>1 Rodada (4 reqs)</option>
+            <option value="2">2 Rodadas (7 reqs)</option>
+          </select>
+        </label>
+        <label>Modelo:
+          <select id="model">
+            <option value="auto" selected>Auto (Cascata: Melhor -> Leve)</option>
+            <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+            <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite</option>
+            <option value="gemma-4-31b-it">gemma-4-31b-it (31B)</option>
+            <option value="gemma-4-26b-a4b-it">gemma-4-26b-a4b-it (MoE 4B)</option>
+          </select>
+        </label>
+      </div>
+      <button id="btn-submit" class="primary">Submeter à Banca</button>
+    </div>
+  </div>
+
+  <div id="tool-bar" style="display:none;gap:8px;flex-wrap:wrap;"></div>
+  <div id="turns" class="turns"></div>
+</div>
+
+<script>
+const MODE_META = {
+  ideias: {
+    ph: "Descreva sua ideia aqui (a banca vai tratá-la como anônima para evitar bajulação)...",
+    members: [
+      ["⚡ Dr. Kael", "Cético / Red Team (proibido elogiar)", "#ef4444"],
+      ["⚙ Eng. Maya", "Pragmática Técnica (escopo & MVP)", "#38bdf8"],
+      ["✦ Soren", "Estrategista de Produto (mercado & pivô)", "#10b981"],
+      ["⚖ Juíza Iris", "Árbitra Final (notas & veredito)", "#f59e0b"]
+    ]
+  },
+  codigo_criacao: {
+    ph: "Descreva o código/algoritmo/função que a banca deve criar e revisar...",
+    members: [
+      ["💻 Dev Júnior", "Gerador Inicial (primeira versão)", "#38bdf8"],
+      ["🛡 Revisor Cético", "Bugs, Segurança & Edge Cases", "#ef4444"],
+      ["⚙ Arquiteto Sênior", "Refatoração & Otimização", "#10b981"],
+      ["⚖ Tech Lead", "Versão Final Consolidada", "#f59e0b"]
+    ]
+  },
+  codigo_avaliacao: {
+    ph: "Cole o trecho de código que deseja submeter para Code Review rigoroso...",
+    members: [
+      ["⚡ Auditor Bugs", "Vulnerabilidades & Falhas Lógicas", "#ef4444"],
+      ["🚀 Eng. Performance", "Complexidade & Gargalos", "#38bdf8"],
+      ["✦ Eng. Qualidade", "Design & Manutenibilidade", "#10b981"],
+      ["⚖ Tech Lead", "Notas & Veredito (Code Review)", "#f59e0b"]
+    ]
+  },
+  texto_criacao: {
+    ph: "Descreva a cena, conto, premissa ou capítulo que a banca literária deve escrever...",
+    members: [
+      ["✍ Autor Criativo", "Rascunho Narrativo", "#a855f7"],
+      ["🔍 Crítico Literário", "Clichês, Furos & Tell Don't Show", "#ef4444"],
+      ["✦ Editor de Estilo", "Lapidação & Ritmo", "#10b981"],
+      ["⚖ Editor-Chefe", "Versão Final Publicável", "#f59e0b"]
+    ]
+  },
+  texto_avaliacao: {
+    ph: "Cole o texto literário, capítulo ou cena para avaliação crítica da banca...",
+    members: [
+      ["⚡ Crítico Estrutural", "Enredo, Coerência & Conflito", "#ef4444"],
+      ["📖 Analista de Prosa", "Estilo, Voz, Diálogos & Ritmo", "#38bdf8"],
+      ["✦ Leitor Beta", "Gancho & Impacto Emocional", "#10b981"],
+      ["⚖ Editor-Chefe", "Notas & Parecer Editorial", "#f59e0b"]
+    ]
+  }
+};
+
+const btn = document.getElementById("btn-submit");
+const ideaEl = document.getElementById("idea");
+const modeEl = document.getElementById("mode");
+const rosterEl = document.getElementById("roster");
+const keyPill = document.getElementById("key-pill");
+const statusPill = document.getElementById("status-pill");
+const turnsEl = document.getElementById("turns");
+const toolBarEl = document.getElementById("tool-bar");
+const fileInput = document.getElementById("file-input");
+const filePills = document.getElementById("file-pills");
+
+let attachedFiles = [];
+
+fileInput.onchange = async () => {
+  for (const f of fileInput.files) {
+    if (attachedFiles.length >= 6) break;
+    const text = await f.text();
+    attachedFiles.push({ name: f.name, content: text.slice(0, 60000) });
+  }
+  fileInput.value = "";
+  renderFiles();
+};
+
+function renderFiles() {
+  filePills.innerHTML = attachedFiles.map((f, i) =>
+    `<span class="pill" style="display:inline-flex;align-items:center;gap:6px;">
+      📄 ${esc(f.name)} (${Math.ceil(f.content.length/1024)}KB)
+      <span onclick="removeFile(${i})" style="cursor:pointer;color:#f87171;">✕</span>
+    </span>`
+  ).join("");
+}
+window.removeFile = (i) => { attachedFiles.splice(i, 1); renderFiles(); };
+
+function renderRoster(m) {
+  const meta = MODE_META[m] || MODE_META.ideias;
+  ideaEl.placeholder = meta.ph;
+  rosterEl.innerHTML = meta.members.map(([name, role, color]) =>
+    `<div class="member" style="border-top-color:${color}">
+      <div class="member-name">${name}</div>
+      <div class="member-role">${role}</div>
+    </div>`
+  ).join("");
+}
+modeEl.onchange = () => renderRoster(modeEl.value);
+renderRoster(modeEl.value);
+
+btn.onclick = async () => {
+  const idea = ideaEl.value.trim();
+  if (!idea && attachedFiles.length === 0) return;
+  const mode = modeEl.value;
+  const model = document.getElementById("model").value;
+  const rounds = parseInt(document.getElementById("rounds").value, 10);
+  await fetch("/evaluate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode, idea, model, rounds, attachments: attachedFiles })
+  });
+};
+
+function esc(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+const es = new EventSource("/events");
+es.onmessage = (msg) => {
+  const s = JSON.parse(msg.data);
+  keyPill.textContent = s.has_key ? "GEMINI_API_KEY OK" : "Sem GEMINI_API_KEY (.env)";
+  keyPill.className = "pill " + (s.has_key ? "pill-ok" : "pill-err");
+
+  statusPill.textContent = s.status_msg;
+  statusPill.className = "pill " + (s.running ? "pill-warn" : "pill-ok");
+  btn.disabled = s.running || !s.has_key;
+
+  if (s.tool_logs && s.tool_logs.length > 0) {
+    toolBarEl.style.display = "flex";
+    toolBarEl.innerHTML = s.tool_logs.map(l => `<span class="pill pill-ok">🛠 ${esc(l)}</span>`).join("");
+  } else {
+    toolBarEl.style.display = "none";
+  }
+
+  turnsEl.innerHTML = s.turns.map(t => {
+    const isJudge = t.color === "#f59e0b";
+    const tBadge = t.tool_badge ? `<span class="pill" style="margin-left:8px;color:#34d399;border-color:#059669;">🛠 ${esc(t.tool_badge)}</span>` : "";
+    return `<div class="turn ${isJudge ? "judge-turn" : ""}" style="border-left-color:${t.color}">
+      <div class="turn-hdr">
+        <span class="turn-author" style="color:${t.color}">${t.symbol} ${esc(t.agent_name)} <span style="color:#94a3b8;font-weight:500">(${esc(t.role_title)})</span>${tBadge}</span>
+        <span class="turn-meta">${isJudge ? "Veredito Final" : "Rodada " + t.round} · ${esc(t.model_used || "")} · ${(t.ms / 1000).toFixed(1)}s</span>
+      </div>
+      <div class="turn-body">${esc(t.text)}</div>
+    </div>`;
+  }).join("");
+};
+</script>
+</body>
+</html>
